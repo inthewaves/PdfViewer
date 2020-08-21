@@ -1,4 +1,4 @@
-package org.grapheneos.pdfviewer;
+package org.grapheneos.pdfviewerdev;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -34,9 +34,9 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 
-import org.grapheneos.pdfviewer.fragment.DocumentPropertiesFragment;
-import org.grapheneos.pdfviewer.fragment.JumpToPageFragment;
-import org.grapheneos.pdfviewer.loader.DocumentPropertiesLoader;
+import org.grapheneos.pdfviewerdev.fragment.DocumentPropertiesFragment;
+import org.grapheneos.pdfviewerdev.fragment.JumpToPageFragment;
+import org.grapheneos.pdfviewerdev.loader.DocumentPropertiesLoader;
 
 public class PdfViewer extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<CharSequence>> {
     public static final String TAG = "PdfViewer";

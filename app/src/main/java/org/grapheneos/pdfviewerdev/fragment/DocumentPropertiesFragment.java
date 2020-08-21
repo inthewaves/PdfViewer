@@ -1,4 +1,4 @@
-package org.grapheneos.pdfviewer.fragment;
+package org.grapheneos.pdfviewerdev.fragment;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -12,7 +12,7 @@ import androidx.fragment.app.DialogFragment;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.grapheneos.pdfviewer.R;
+import org.grapheneos.pdfviewerdev.R;
 
 public class DocumentPropertiesFragment extends DialogFragment {
     public static final String TAG = "DocumentPropertiesFragment";

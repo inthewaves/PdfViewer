@@ -1,4 +1,4 @@
-package org.grapheneos.pdfviewer.fragment;
+package org.grapheneos.pdfviewerdev.fragment;
 
 import android.app.Dialog;
 import android.content.DialogInterface;
@@ -10,7 +10,7 @@ import android.widget.NumberPicker;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 
-import org.grapheneos.pdfviewer.PdfViewer;
+import org.grapheneos.pdfviewerdev.PdfViewer;
 
 public class JumpToPageFragment extends DialogFragment {
     public static final String TAG = "JumpToPageFragment";
