@@ -8,14 +8,11 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.animation.AccelerateInterpolator;
-import android.view.animation.DecelerateInterpolator;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -23,6 +20,7 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,17 +30,16 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.loader.app.LoaderManager;
 import androidx.loader.content.Loader;
 
-import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.snackbar.Snackbar;
+
+import org.grapheneos.pdfviewer.fragment.DocumentPropertiesFragment;
+import org.grapheneos.pdfviewer.fragment.JumpToPageFragment;
+import org.grapheneos.pdfviewer.loader.DocumentPropertiesLoader;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
-
-import org.grapheneos.pdfviewer.fragment.DocumentPropertiesFragment;
-import org.grapheneos.pdfviewer.fragment.JumpToPageFragment;
-import org.grapheneos.pdfviewer.loader.DocumentPropertiesLoader;
 
 public class PdfViewer extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<CharSequence>> {
     public static final String TAG = "PdfViewer";
@@ -91,6 +88,8 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
     private static final int STATE_END = 2;
     private static final int PADDING = 10;
 
+    private int mToolbarHeight;
+
     private Uri mUri;
     public int mPage;
     public int mNumPages;
@@ -101,6 +100,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
     private List<CharSequence> mDocumentProperties;
     private InputStream mInputStream;
 
+    private ProgressBar mProgressBar;
     private WebView mWebView;
     private TextView mTextView;
     private Toast mToast;
@@ -134,6 +134,13 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
         }
 
         @JavascriptInterface
+        public void doneRendering() {
+            runOnUiThread(() -> {
+                mProgressBar.setVisibility(View.INVISIBLE);
+            });
+        }
+
+        @JavascriptInterface
         public void setDocumentProperties(final String properties) {
             if (mDocumentProperties != null) {
                 throw new SecurityException("mDocumentProperties not null");
@@ -160,10 +167,18 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
 
         setContentView(R.layout.webview);
 
+        mProgressBar = findViewById(R.id.progressBar);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        toolbar.inflateMenu(R.menu.pdf_viewer);
+        toolbar.setTitle(R.string.app_name);
+        mToolbarHeight = toolbar.getMinimumHeight();
+
         mWebView = findViewById(R.id.webview);
 
         mWebView.setOnApplyWindowInsetsListener((view, insets) -> {
-            windowInsetTop = insets.getSystemWindowInsetTop();
+            windowInsetTop = insets.getSystemWindowInsetTop() + mToolbarHeight;
             mWebView.evaluateJavascript("updateInset()", null);
             return insets;
         });
@@ -241,11 +256,6 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
         });
 
         showSystemUi();
-
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        toolbar.inflateMenu(R.menu.pdf_viewer);
-        toolbar.setTitle(R.string.app_name);
 
         GestureHelper.attach(PdfViewer.this, mWebView,
                 new GestureHelper.GestureListener() {
@@ -353,6 +363,9 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
     }
 
     private void renderPage(final int zoom) {
+        if (zoom == 0) {
+            mProgressBar.setVisibility(View.VISIBLE);
+        }
         mWebView.evaluateJavascript("onRenderPage(" + zoom + ")", null);
     }
 

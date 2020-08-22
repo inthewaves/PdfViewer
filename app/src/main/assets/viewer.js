@@ -47,6 +47,7 @@ function doPrerender(pageNumber, prerenderTrigger) {
             renderPage(prerenderTrigger - 1, false, true, prerenderTrigger);
         }
     }
+    channel.doneRendering();
 }
 
 function display(newCanvas, zoom) {
@@ -192,6 +193,7 @@ function onRenderPage(zoom) {
     } else {
         renderPage(channel.getPage(), zoom, false);
     }
+    channel.doneRendering();
 }
 
 function isTextSelected() {
