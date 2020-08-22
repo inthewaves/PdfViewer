@@ -1,35 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <WebView android:id="@+id/webview"
+    <WebView
+        android:id="@+id/webview"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent" >
+        android:layout_height="fill_parent"
+        android:visibility="visible" />
 
-    </WebView>
-
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarLayout"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?attr/colorPrimary"
-        android:fitsSystemWindows="true"
-        android:theme="@style/ThemeOverlay.AppCompat">
+        android:animateLayoutChanges="true"
+        android:orientation="vertical">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/appBarLayout"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
             android:background="?attr/colorPrimary"
-            android:fitsSystemWindows="false"
-            android:minHeight="?attr/actionBarSize"
-            android:theme="?attr/actionBarTheme"
-            app:menu="@menu/pdf_viewer"
-            app:titleTextColor="?android:attr/textColorPrimary" />
+            android:fitsSystemWindows="true"
+            android:theme="@style/ToolbarTheme">
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:fitsSystemWindows="false"
+                android:minHeight="?attr/actionBarSize"
+                android:theme="@style/ToolbarTheme"
+                app:menu="@menu/pdf_viewer"
+                app:titleTextColor="#F5F5F5" />
+
+        </com.google.android.material.appbar.AppBarLayout>
 
         <ProgressBar
             android:id="@+id/progressBar"
@@ -38,8 +45,8 @@
             android:layout_height="wrap_content"
             android:background="?attr/colorPrimary"
             android:indeterminate="true"
-            android:theme="?attr/progressBarStyle" />
-
-    </com.google.android.material.appbar.AppBarLayout>
+            android:theme="@style/ToolbarTheme"
+            android:visibility="gone" />
+    </LinearLayout>
 
 </FrameLayout>

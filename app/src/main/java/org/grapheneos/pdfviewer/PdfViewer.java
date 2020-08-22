@@ -416,14 +416,9 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
 
-        ActionBar ab = getSupportActionBar();
-        if (ab != null && !ab.isShowing()) {
-            ab.show();
-            Toolbar mToolbar = findViewById(R.id.toolbar);
-            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
-            if (appBarLayout != null) {
-                appBarLayout.animate().translationY(0).setInterpolator(new DecelerateInterpolator(2)).start();
-            }
+        final ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null && !actionBar.isShowing()) {
+            actionBar.show();
         }
     }
 
@@ -436,26 +431,9 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
                 View.SYSTEM_UI_FLAG_FULLSCREEN |
                 View.SYSTEM_UI_FLAG_IMMERSIVE);
 
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            //actionBar.hide();
-        }
-
-        final ActionBar ab = getSupportActionBar();
-        if (ab != null && ab.isShowing()) {
-            Toolbar mToolbar = findViewById(R.id.toolbar);
-            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
-            if (appBarLayout != null) {
-                appBarLayout.animate().translationY(-mToolbar.getHeight()/2).setInterpolator(new AccelerateInterpolator(2))
-                        .withEndAction(new Runnable() {
-                            @Override
-                            public void run() {
-                                ab.hide();
-                            }
-                        }).start();
-            } else {
-                ab.hide();
-            }
+        final ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null && actionBar.isShowing()) {
+            actionBar.hide();
         }
     }
 
