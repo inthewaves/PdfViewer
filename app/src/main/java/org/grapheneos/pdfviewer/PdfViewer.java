@@ -8,11 +8,14 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -23,10 +26,13 @@ import android.webkit.WebViewClient;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.loader.app.LoaderManager;
 import androidx.loader.content.Loader;
 
+import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.io.IOException;
@@ -236,6 +242,11 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
 
         showSystemUi();
 
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        toolbar.inflateMenu(R.menu.pdf_viewer);
+        toolbar.setTitle(R.string.app_name);
+
         GestureHelper.attach(PdfViewer.this, mWebView,
                 new GestureHelper.GestureListener() {
                     @Override
@@ -404,6 +415,16 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+
+        ActionBar ab = getSupportActionBar();
+        if (ab != null && !ab.isShowing()) {
+            ab.show();
+            Toolbar mToolbar = findViewById(R.id.toolbar);
+            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+            if (appBarLayout != null) {
+                appBarLayout.animate().translationY(0).setInterpolator(new DecelerateInterpolator(2)).start();
+            }
+        }
     }
 
     private void hideSystemUi() {
@@ -414,6 +435,28 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
                 View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                 View.SYSTEM_UI_FLAG_FULLSCREEN |
                 View.SYSTEM_UI_FLAG_IMMERSIVE);
+
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            //actionBar.hide();
+        }
+
+        final ActionBar ab = getSupportActionBar();
+        if (ab != null && ab.isShowing()) {
+            Toolbar mToolbar = findViewById(R.id.toolbar);
+            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+            if (appBarLayout != null) {
+                appBarLayout.animate().translationY(-mToolbar.getHeight()/2).setInterpolator(new AccelerateInterpolator(2))
+                        .withEndAction(new Runnable() {
+                            @Override
+                            public void run() {
+                                ab.hide();
+                            }
+                        }).start();
+            } else {
+                ab.hide();
+            }
+        }
     }
 
     @Override
