@@ -50,7 +50,7 @@ function doPrerender(pageNumber, prerenderTrigger) {
     }
 }
 
-function display(newCanvas, zoom, pageNumber) {
+function display(newCanvas, zoom) {
     canvas.height = newCanvas.height;
     canvas.width = newCanvas.width;
     canvas.style.height = newCanvas.style.height;
@@ -80,7 +80,7 @@ function renderPage(pageNumber, zoom, prerender, prerenderTrigger=0) {
                 cache.splice(i, 1);
                 cache.push(cached);
 
-                display(cached.canvas, zoom, pageNumber);
+                display(cached.canvas, zoom);
 
                 textLayerDiv.replaceWith(cached.textLayerDiv);
                 textLayerDiv = cached.textLayerDiv;
@@ -134,7 +134,7 @@ function renderPage(pageNumber, zoom, prerender, prerenderTrigger=0) {
                 if (!useRender || rendered) {
                     return;
                 }
-                display(newCanvas, zoom, pageNumber);
+                display(newCanvas, zoom);
                 rendered = true;
             }
             render();

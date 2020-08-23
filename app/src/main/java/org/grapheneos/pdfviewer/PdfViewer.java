@@ -88,7 +88,6 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
     private static final int STATE_END = 2;
     private static final int PADDING = 10;
 
-    private int mToolbarHeight;
     private boolean mIsProgressBarVisible;
 
     private Uri mUri;
@@ -262,7 +261,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
             }
         });
 
-        showSystemUi();
+        showSystemUiAndActionBar();
 
         GestureHelper.attach(PdfViewer.this, mWebView,
                 new GestureHelper.GestureListener() {
@@ -273,9 +272,9 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
                                 if (!Boolean.valueOf(selection)) {
                                     if ((getWindow().getDecorView().getSystemUiVisibility() &
                                             View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
-                                        hideSystemUi();
+                                        hideSystemUiAndActionBar();
                                     } else {
-                                        showSystemUi();
+                                        showSystemUiAndActionBar();
                                     }
                                 }
                             });
@@ -436,7 +435,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
         }
     }
 
-    private void showSystemUi() {
+    private void showSystemUiAndActionBar() {
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
@@ -448,7 +447,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
         }
     }
 
-    private void hideSystemUi() {
+    private void hideSystemUiAndActionBar() {
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
