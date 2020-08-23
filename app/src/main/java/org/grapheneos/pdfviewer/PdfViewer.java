@@ -89,6 +89,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
     private static final int PADDING = 10;
 
     private int mToolbarHeight;
+    private boolean mIsProgressBarVisible;
 
     private Uri mUri;
     public int mPage;
@@ -134,10 +135,13 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
         }
 
         @JavascriptInterface
-        public void doneRendering() {
-            runOnUiThread(() -> {
-                mProgressBar.setVisibility(View.INVISIBLE);
-            });
+        public void doneRendering(int pageRendered, boolean isIgnoringPageRendered) {
+            if (mIsProgressBarVisible && (pageRendered == mPage || isIgnoringPageRendered)) {
+                mIsProgressBarVisible = false;
+                runOnUiThread(() -> {
+                    mProgressBar.setVisibility(View.INVISIBLE);
+                });
+            }
         }
 
         @JavascriptInterface
@@ -166,6 +170,8 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.webview);
+
+        mIsProgressBarVisible = false;
 
         mProgressBar = findViewById(R.id.progressBar);
 
@@ -364,6 +370,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
 
     private void renderPage(final int zoom) {
         if (zoom == 0) {
+            mIsProgressBarVisible = true;
             mProgressBar.setVisibility(View.VISIBLE);
         }
         mWebView.evaluateJavascript("onRenderPage(" + zoom + ")", null);

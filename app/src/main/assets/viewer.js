@@ -31,6 +31,7 @@ function maybeRenderNextPage() {
 function handleRenderingError(error) {
     console.log("rendering error: " + error);
 
+    channel.doneRendering(0, true);
     pageRendering = false;
     maybeRenderNextPage();
 }
@@ -47,10 +48,9 @@ function doPrerender(pageNumber, prerenderTrigger) {
             renderPage(prerenderTrigger - 1, false, true, prerenderTrigger);
         }
     }
-    channel.doneRendering();
 }
 
-function display(newCanvas, zoom) {
+function display(newCanvas, zoom, pageNumber) {
     canvas.height = newCanvas.height;
     canvas.width = newCanvas.width;
     canvas.style.height = newCanvas.style.height;
@@ -60,6 +60,7 @@ function display(newCanvas, zoom) {
     if (!zoom) {
         scrollTo(0, 0);
     }
+    channel.doneRendering(pageNumber, false);
 }
 
 function renderPage(pageNumber, zoom, prerender, prerenderTrigger=0) {
@@ -79,7 +80,7 @@ function renderPage(pageNumber, zoom, prerender, prerenderTrigger=0) {
                 cache.splice(i, 1);
                 cache.push(cached);
 
-                display(cached.canvas, zoom);
+                display(cached.canvas, zoom, pageNumber);
 
                 textLayerDiv.replaceWith(cached.textLayerDiv);
                 textLayerDiv = cached.textLayerDiv;
@@ -133,7 +134,7 @@ function renderPage(pageNumber, zoom, prerender, prerenderTrigger=0) {
                 if (!useRender || rendered) {
                     return;
                 }
-                display(newCanvas, zoom);
+                display(newCanvas, zoom, pageNumber);
                 rendered = true;
             }
             render();
@@ -193,7 +194,6 @@ function onRenderPage(zoom) {
     } else {
         renderPage(channel.getPage(), zoom, false);
     }
-    channel.doneRendering();
 }
 
 function isTextSelected() {
