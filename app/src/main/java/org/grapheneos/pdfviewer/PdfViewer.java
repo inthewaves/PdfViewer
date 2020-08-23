@@ -355,12 +355,20 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
         mDocumentProperties = null;
     }
 
+    private void showProgressBar(int zoom) {
+        if (zoom == 0) {
+            mIsProgressBarVisible = true;
+            mProgressBar.setVisibility(View.VISIBLE);
+        }
+    }
+
     private void loadPdf() {
         try {
             if (mInputStream != null) {
                 mInputStream.close();
             }
             mInputStream = getContentResolver().openInputStream(mUri);
+            showProgressBar(0);
         } catch (IOException e) {
             snackbar.setText(R.string.io_error).show();
             return;
@@ -369,10 +377,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
     }
 
     private void renderPage(final int zoom) {
-        if (zoom == 0) {
-            mIsProgressBarVisible = true;
-            mProgressBar.setVisibility(View.VISIBLE);
-        }
+        showProgressBar(zoom);
         mWebView.evaluateJavascript("onRenderPage(" + zoom + ")", null);
     }
 
