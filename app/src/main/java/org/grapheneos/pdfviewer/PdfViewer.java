@@ -135,8 +135,8 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
         }
 
         @JavascriptInterface
-        public void doneRendering(int pageRendered, boolean isIgnoringPageRendered) {
-            if (mIsProgressBarVisible && (pageRendered == mPage || isIgnoringPageRendered)) {
+        public void hideProgressBar() {
+            if (mIsProgressBarVisible) {
                 mIsProgressBarVisible = false;
                 runOnUiThread(() -> {
                     mProgressBar.setVisibility(View.INVISIBLE);
@@ -179,12 +179,13 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
         setSupportActionBar(toolbar);
         toolbar.inflateMenu(R.menu.pdf_viewer);
         toolbar.setTitle(R.string.app_name);
-        mToolbarHeight = toolbar.getMinimumHeight();
 
         mWebView = findViewById(R.id.webview);
 
         mWebView.setOnApplyWindowInsetsListener((view, insets) -> {
-            windowInsetTop = insets.getSystemWindowInsetTop() + mToolbarHeight;
+            // The ActionBar is no longer a part of the system, so we have to
+            // add in its height for the inset.
+            windowInsetTop = insets.getSystemWindowInsetTop() + toolbar.getMinimumHeight();
             mWebView.evaluateJavascript("updateInset()", null);
             return insets;
         });
