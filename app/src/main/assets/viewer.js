@@ -31,7 +31,6 @@ function maybeRenderNextPage() {
 function handleRenderingError(error) {
     console.log("rendering error: " + error);
 
-    channel.hideProgressBar();
     pageRendering = false;
     maybeRenderNextPage();
 }
@@ -60,7 +59,7 @@ function display(newCanvas, zoom) {
     if (!zoom) {
         scrollTo(0, 0);
     }
-    channel.hideProgressBar(pageNumber, false);
+    channel.hideProgressBar();
 }
 
 function renderPage(pageNumber, zoom, prerender, prerenderTrigger=0) {
