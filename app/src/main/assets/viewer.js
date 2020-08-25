@@ -248,7 +248,9 @@ pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(
 
     pdfDoc.getOutline().then(function(outline) {
         // https://github.com/mozilla/pdf.js/blob/a6db0457893b7bc960d63a8aa07b9091ddea84e0/src/display/api.js#L703-L722
+        console.log("getOutline: beginning conversion");
         parseOutline(outline).then(function(outlineEntries) {
+            console.log("getOutline: finished conversion");
             channel.setOutline(JSON.stringify(outlineEntries));
         });
     }).catch(function(error) {
