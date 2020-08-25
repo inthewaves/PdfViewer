@@ -208,12 +208,20 @@ updateInset();
 
 pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(newDoc) {
     pdfDoc = newDoc;
+
     channel.setNumPages(pdfDoc.numPages);
     pdfDoc.getMetadata().then(function(data) {
         channel.setDocumentProperties(JSON.stringify(data.info));
     }).catch(function(error) {
         console.log("getMetadata error: " + error);
     });
+    pdfDoc.getOutline().then(function(data) {
+        // https://github.com/mozilla/pdf.js/blob/a6db0457893b7bc960d63a8aa07b9091ddea84e0/src/display/api.js#L703-L722
+        channel.setOutline(JSON.stringify(data));
+    }).catch(function(error) {
+        console.log("getOutline error: " + error);
+    });
+
     renderPage(channel.getPage(), false, false);
 }).catch(function(error) {
     console.log("getDocument error: " + error);

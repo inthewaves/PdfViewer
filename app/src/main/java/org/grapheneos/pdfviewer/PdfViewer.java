@@ -139,6 +139,15 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
                 LoaderManager.getInstance(PdfViewer.this).restartLoader(DocumentPropertiesLoader.ID, args, PdfViewer.this);
             });
         }
+
+        @JavascriptInterface
+        public void setOutline(final String outline) {
+            if (mDocumentProperties != null) {
+                throw new SecurityException("mDocumentProperties not null");
+            }
+
+            Log.d(TAG, "outline: " + outline);
+        }
     }
 
     // Can be removed once minSdkVersion >= 26
