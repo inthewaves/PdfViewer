@@ -216,29 +216,12 @@ async function getPageNumberFromDestString(destString) {
     }
 }
 
-async function printOutline(outline, indent) {
-    try {
-        for (let i = 0; i < outline.length; i++) {
-            console.log("printOutline: " + indent + "outline[" + i + "]: " + outline[i].title
-                + ", " + await getPageNumberFromDestString(outline[i].dest));
-
-            if (outline[i].items.length > 0) {
-                printOutline(outline[i].items, indent.length == 0 ? "-> " : " " + indent);
-            }
-        }
-    } catch (error) {
-        console.log("printOutline error: " + error);
-    }
-}
-
 async function parseOutline(outline) {
     const outlineEntries = [];
 
     for (let i = 0; i < outline.length; i++) {
         let nestedOutlineEntry = null;
         if (outline[i].items.length > 0) {
-            // console.log("printOutline: Trying to recurse");
-            console.log("I HAVE CHILDREN");
             nestedOutlineEntry = await parseOutline(outline[i].items);
         }
 
@@ -249,7 +232,6 @@ async function parseOutline(outline) {
         });
     }
 
-    console.log("The payload now: " + JSON.stringify(outlineEntries) );
     return outlineEntries;
 }
 
@@ -266,87 +248,12 @@ pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(
 
     pdfDoc.getOutline().then(function(outline) {
         // https://github.com/mozilla/pdf.js/blob/a6db0457893b7bc960d63a8aa07b9091ddea84e0/src/display/api.js#L703-L722
-        channel.setOutline(JSON.stringify(outline));
-
         parseOutline(outline).then(function(outlineEntries) {
-            console.log("outlineEntries: " + JSON.stringify(outlineEntries));
+            channel.setOutline(JSON.stringify(outlineEntries));
         });
-
-        /*
-        const dest = outline[0].dest
-        console.log("getOutline dest: " + dest);
-        pdfDoc.getDestination(dest).then(function(getDest) {
-            console.log("getOutline getDest: " + getDest);
-
-            pdfDoc.getPageIndex(getDest[0]).then(function(index) {
-                console.log("getOutline getPageIndex: " + index);
-            }).catch(function(error) {
-                console.log("getOutline error: " + error);
-            });
-        }).catch(function(error) {
-            console.log("getOutline error: " + error);
-        });
-        */
-
     }).catch(function(error) {
         console.log("getOutline error: " + error);
     });
-
-
-    /// https://medium.com/@cpreager/a-slightly-updated-version-56466f1d30ba
-    const toc = [];
-    console.log("Saving table of contents");
-    pdfDoc
-        .getOutline()
-        .then(
-            function(outline) {
-                let lastPromise = Promise.resolve(); // will be used to chain promises
-                if (outline) {
-                    const getTOCEntry = function(i) {
-                        const dest = outline[i].dest;
-                        return new Promise((resolve, reject) => {
-                            if (typeof dest === "string") {
-                                console.log("I am a string");
-                                this.pdfDoc.getDestination(dest).then(destArray => {
-                                    resolve(destArray);
-                                });
-                                return;
-                            }
-                            resolve(dest);
-                        }).then(explicitDest => {
-                            // Dest array looks like that: <page-ref> </XYZ|/FitXXX> <args..>
-                            const destRef = explicitDest[0];
-                            if (destRef instanceof Object) {
-                                return pdfDoc
-                                    .getPageIndex(destRef)
-                                    .then(pageIndex => {
-                                        toc.push({
-                                            title: outline[i]["title"],
-                                            pageNumber: parseInt(pageIndex) + 1,
-                                        });
-                                    })
-                                    .catch(() => {
-                                        console.error(
-                                            `${destRef}" not a valid page reference for dest ${dest}`
-                                        );
-                                    });
-                            }
-                        });
-                    };
-                    for (let i = 0; i < outline.length; i++) {
-                        lastPromise = lastPromise.then(getTOCEntry.bind(null, i));
-                    }
-                }
-                return lastPromise;
-            },
-            function(err) {
-                console.error("Error", err);
-            }
-        )
-        .then(function() {
-            console.log(JSON.stringify(toc));
-        });
-
 
     renderPage(channel.getPage(), false, false);
 }).catch(function(error) {
