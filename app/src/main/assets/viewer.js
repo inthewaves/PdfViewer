@@ -206,45 +206,51 @@ function updateInset() {
 
 updateInset();
 
-/*
-function getPageNumberFromDestString(destString) {
-    return pdfDoc.getDestination(destString).then(function(dest) {
-        return pdfDoc.getPageIndex(dest[0]).then(function(index) {
-            return parseInt(id) + 1;
-        });
-    });
-}
-*/
-
-function getPageNumberFromDestString(destString) {
-    var returnedPage = -1;
-
-    pdfDoc.getPageIndex(destString[0]).then(function(index) {
-        returnedPage = parseInt(index) + 1;
-        console.log("returnedPage in inner function: " + returnedPage);
-    }).catch(function(error) {
+async function getPageNumberFromDestString(destString) {
+    try {
+        const index = await pdfDoc.getPageIndex(destString[0]);
+        return parseInt(index) + 1;
+    } catch (error) {
         console.log("getPageNumberFromDestString error: " + error);
-    });
+        return -1;
+    }
+}
 
-    console.log("returnedPage outside: " + returnedPage);
-    return returnedPage;
-};
-
-function printOutline(outline, indent) {
-
+async function printOutline(outline, indent) {
     try {
         for (let i = 0; i < outline.length; i++) {
-            console.log("printOutline: " + indent + "outline[" + i + "]: " + outline[i].title);
+            console.log("printOutline: " + indent + "outline[" + i + "]: " + outline[i].title
+                + ", " + await getPageNumberFromDestString(outline[i].dest));
 
             if (outline[i].items.length > 0) {
-                // console.log("printOutline: Trying to recurse");
                 printOutline(outline[i].items, indent.length == 0 ? "-> " : " " + indent);
             }
         }
     } catch (error) {
         console.log("printOutline error: " + error);
     }
-    // console.log("printOutline: Done");
+}
+
+async function parseOutline(outline) {
+    const outlineEntries = [];
+
+    for (let i = 0; i < outline.length; i++) {
+        let nestedOutlineEntry = null;
+        if (outline[i].items.length > 0) {
+            // console.log("printOutline: Trying to recurse");
+            console.log("I HAVE CHILDREN");
+            nestedOutlineEntry = await parseOutline(outline[i].items);
+        }
+
+        outlineEntries.push({
+            title: outline[i].title,
+            pageNumber: await getPageNumberFromDestString(outline[i].dest),
+            children: nestedOutlineEntry,
+        });
+    }
+
+    console.log("The payload now: " + JSON.stringify(outlineEntries) );
+    return outlineEntries;
 }
 
 pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(newDoc) {
@@ -262,9 +268,9 @@ pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(
         // https://github.com/mozilla/pdf.js/blob/a6db0457893b7bc960d63a8aa07b9091ddea84e0/src/display/api.js#L703-L722
         channel.setOutline(JSON.stringify(outline));
 
-        console.log("printOutline before length: " + outline.length);
-        printOutline(outline, "");
-
+        parseOutline(outline).then(function(outlineEntries) {
+            console.log("outlineEntries: " + JSON.stringify(outlineEntries));
+        });
 
         /*
         const dest = outline[0].dest
