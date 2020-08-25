@@ -19,13 +19,17 @@ import java.util.List;
 public class OutlineViewModel extends ViewModel {
     private static final String TAG = "OutlineViewModel";
 
-    private final MutableLiveData<List<OutlineEntry>> outlineList = new MutableLiveData<>();
+    private final MutableLiveData<List<OutlineEntry>> mOutlineList = new MutableLiveData<>();
 
     public LiveData<List<OutlineEntry>> getOutlineList() {
-        return outlineList;
+        return mOutlineList;
     }
 
-    public void setOutline(@NonNull String outlineString) {
+    public void setOutline(List<OutlineEntry> outlineList) {
+        mOutlineList.setValue(outlineList);
+    }
+
+    public void setOutlineFromJsonString(@NonNull String outlineString) {
         try {
             JSONArray outline = new JSONArray(outlineString);
             List<OutlineEntry> outlineEntries = new ArrayList<>(outline.length());
@@ -34,7 +38,7 @@ public class OutlineViewModel extends ViewModel {
                 outlineEntries.add(convertJsonToOutlineEntry(outline.getJSONObject(i)));
             }
             Log.d(TAG, "done converting JSON to OutlineEntry");
-            outlineList.setValue(outlineEntries);
+            mOutlineList.setValue(outlineEntries);
         } catch (JSONException e) {
             Log.e(TAG, "error", e);
         }

@@ -38,6 +38,7 @@ import org.grapheneos.pdfviewer.viewmodel.OutlineViewModel;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -155,7 +156,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
             }
 
             runOnUiThread(() -> {
-                mOutlineViewModel.setOutline(outlineString);
+                mOutlineViewModel.setOutlineFromJsonString(outlineString);
             });
         }
     }
@@ -179,7 +180,9 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
         mOutlineViewModel.getOutlineList().observe(this, outlineList -> {
             Log.d(TAG, "outlineViewModel updating list");
             mSingleton.setOutlineEntries(outlineList);
-            Toast.makeText(this, "Outline updated!", Toast.LENGTH_LONG).show();
+            if (outlineList != null && outlineList.size() > 0) {
+                Toast.makeText(this, "Outline updated, new size " + outlineList.size(), Toast.LENGTH_LONG).show();
+            }
         });
 
         mWebView = findViewById(R.id.webview);
@@ -368,6 +371,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
             snackbar.setText(R.string.io_error).show();
             return;
         }
+        mOutlineViewModel.setOutline(Collections.emptyList());
         mWebView.loadUrl("https://localhost/viewer.html");
     }
 
