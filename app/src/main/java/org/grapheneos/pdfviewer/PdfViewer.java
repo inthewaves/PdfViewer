@@ -15,7 +15,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
-import android.webkit.ValueCallback;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -33,11 +32,15 @@ import com.google.android.material.snackbar.Snackbar;
 import org.grapheneos.pdfviewer.fragment.DocumentPropertiesFragment;
 import org.grapheneos.pdfviewer.fragment.JumpToPageFragment;
 import org.grapheneos.pdfviewer.loader.DocumentPropertiesLoader;
+import org.grapheneos.pdfviewer.model.OutlineEntry;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -103,6 +106,30 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
     private Toast mToast;
     private Snackbar snackbar;
 
+    private OutlineEntry convertJsonToOutlineEntry(JSONObject jsonObject) {
+        if (jsonObject == null) {
+            return null;
+        }
+
+        String title = jsonObject.optString("title", "error");
+        String pageNumber = jsonObject.optString("pageNumber");
+
+        JSONArray nested = jsonObject.optJSONArray("children");
+        List<OutlineEntry> children;
+        if (nested == null) {
+            children = Collections.emptyList();
+        } else {
+            children = new ArrayList<>(nested.length());
+            for (int i = 0; i < nested.length(); i++) {
+                OutlineEntry child = convertJsonToOutlineEntry(nested.optJSONObject(i));
+                children.add(child);
+            }
+        }
+
+        Log.d(TAG, title + ", " + pageNumber + ", " + children.size() + " children");
+        return new OutlineEntry(title, Integer.parseInt(pageNumber), children);
+    }
+
     private class Channel {
         @JavascriptInterface
         public int getWindowInsetTop() {
@@ -144,31 +171,24 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
         }
 
         @JavascriptInterface
-        public void setOutline(final String outline) {
+        public void setOutline(final String outlineString) {
 
-            Log.d(TAG, "outline: " + outline);
-            if (outline == null) {
+            Log.d(TAG, "outlineString: " + outlineString);
+            if (outlineString == null) {
                 return;
             }
 
+            // Load it somewhere
             try {
-                final String dest = new JSONArray(outline).getJSONObject(1)
-                        .optString("dest");
-
-                if (dest.length() == 0) {
-                    return;
+                JSONArray outline = new JSONArray(outlineString);
+                List<OutlineEntry> outlineEntries = new ArrayList<>(outline.length());
+                for (int i = 0; i < outline.length(); i++) {
+                    outlineEntries.add(convertJsonToOutlineEntry(outline.getJSONObject(i)));
                 }
-                Log.d(TAG, "dest: " + dest);
-                runOnUiThread(() -> {
-                    mWebView.evaluateJavascript("getPageNumberFromDestString(" + dest + ")",
-                            (ValueCallback<String>) value -> {
-                                Log.d(TAG, "setOutline: " + value);
-                            });
-                });
+
             } catch (JSONException e) {
                 Log.e(TAG, "error", e);
             }
-
         }
     }
 
