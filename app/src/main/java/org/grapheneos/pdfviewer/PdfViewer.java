@@ -29,14 +29,14 @@ import androidx.loader.content.Loader;
 
 import com.google.android.material.snackbar.Snackbar;
 
+import org.grapheneos.pdfviewer.fragment.DocumentPropertiesFragment;
+import org.grapheneos.pdfviewer.fragment.JumpToPageFragment;
+import org.grapheneos.pdfviewer.loader.DocumentPropertiesLoader;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
-
-import org.grapheneos.pdfviewer.fragment.DocumentPropertiesFragment;
-import org.grapheneos.pdfviewer.fragment.JumpToPageFragment;
-import org.grapheneos.pdfviewer.loader.DocumentPropertiesLoader;
 
 public class PdfViewer extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<CharSequence>> {
     public static final String TAG = "PdfViewer";
@@ -138,6 +138,15 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
             runOnUiThread(() -> {
                 LoaderManager.getInstance(PdfViewer.this).restartLoader(DocumentPropertiesLoader.ID, args, PdfViewer.this);
             });
+        }
+
+        @JavascriptInterface
+        public void setOutline(final String outline) {
+            if (mDocumentProperties != null) {
+                throw new SecurityException("mDocumentProperties not null");
+            }
+
+            Log.d(TAG, "outline: " + outline);
         }
     }
 
