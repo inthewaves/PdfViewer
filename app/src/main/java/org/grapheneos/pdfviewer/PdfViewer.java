@@ -15,6 +15,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -32,6 +33,8 @@ import com.google.android.material.snackbar.Snackbar;
 import org.grapheneos.pdfviewer.fragment.DocumentPropertiesFragment;
 import org.grapheneos.pdfviewer.fragment.JumpToPageFragment;
 import org.grapheneos.pdfviewer.loader.DocumentPropertiesLoader;
+import org.json.JSONArray;
+import org.json.JSONException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -142,11 +145,30 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
 
         @JavascriptInterface
         public void setOutline(final String outline) {
-            if (mDocumentProperties != null) {
-                throw new SecurityException("mDocumentProperties not null");
-            }
 
             Log.d(TAG, "outline: " + outline);
+            if (outline == null) {
+                return;
+            }
+
+            try {
+                final String dest = new JSONArray(outline).getJSONObject(1)
+                        .optString("dest");
+
+                if (dest.length() == 0) {
+                    return;
+                }
+                Log.d(TAG, "dest: " + dest);
+                runOnUiThread(() -> {
+                    mWebView.evaluateJavascript("getPageNumberFromDestString(" + dest + ")",
+                            (ValueCallback<String>) value -> {
+                                Log.d(TAG, "setOutline: " + value);
+                            });
+                });
+            } catch (JSONException e) {
+                Log.e(TAG, "error", e);
+            }
+
         }
     }
 
@@ -325,6 +347,8 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
     public Loader<List<CharSequence>> onCreateLoader(int id, Bundle args) {
         return new DocumentPropertiesLoader(this, args.getString(KEY_PROPERTIES), mNumPages, mUri);
     }
+
+
 
     @Override
     public void onLoadFinished(Loader<List<CharSequence>> loader, List<CharSequence> data) {
