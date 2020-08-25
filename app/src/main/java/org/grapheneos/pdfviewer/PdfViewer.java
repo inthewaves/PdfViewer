@@ -24,23 +24,20 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.loader.app.LoaderManager;
 import androidx.loader.content.Loader;
 
 import com.google.android.material.snackbar.Snackbar;
 
+import org.grapheneos.pdfviewer.activity.OutlineActivity;
 import org.grapheneos.pdfviewer.fragment.DocumentPropertiesFragment;
 import org.grapheneos.pdfviewer.fragment.JumpToPageFragment;
 import org.grapheneos.pdfviewer.loader.DocumentPropertiesLoader;
-import org.grapheneos.pdfviewer.model.OutlineEntry;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.grapheneos.pdfviewer.viewmodel.OutlineViewModel;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -91,6 +88,8 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
     private static final int STATE_END = 2;
     private static final int PADDING = 10;
 
+    private ApplicationSingleton mSingleton;
+
     private Uri mUri;
     public int mPage;
     public int mNumPages;
@@ -101,34 +100,12 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
     private List<CharSequence> mDocumentProperties;
     private InputStream mInputStream;
 
+    private OutlineViewModel mOutlineViewModel;
+
     private WebView mWebView;
     private TextView mTextView;
     private Toast mToast;
     private Snackbar snackbar;
-
-    private OutlineEntry convertJsonToOutlineEntry(JSONObject jsonObject) {
-        if (jsonObject == null) {
-            return null;
-        }
-
-        String title = jsonObject.optString("title", "error");
-        String pageNumber = jsonObject.optString("pageNumber");
-
-        JSONArray nested = jsonObject.optJSONArray("children");
-        List<OutlineEntry> children;
-        if (nested == null) {
-            children = Collections.emptyList();
-        } else {
-            children = new ArrayList<>(nested.length());
-            for (int i = 0; i < nested.length(); i++) {
-                OutlineEntry child = convertJsonToOutlineEntry(nested.optJSONObject(i));
-                children.add(child);
-            }
-        }
-
-        Log.d(TAG, title + ", " + pageNumber + ", " + children.size() + " children");
-        return new OutlineEntry(title, Integer.parseInt(pageNumber), children);
-    }
 
     private class Channel {
         @JavascriptInterface
@@ -172,23 +149,14 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
 
         @JavascriptInterface
         public void setOutline(final String outlineString) {
-
             Log.d(TAG, "outlineString: " + outlineString);
             if (outlineString == null) {
                 return;
             }
 
-            // Load it somewhere
-            try {
-                JSONArray outline = new JSONArray(outlineString);
-                List<OutlineEntry> outlineEntries = new ArrayList<>(outline.length());
-                for (int i = 0; i < outline.length(); i++) {
-                    outlineEntries.add(convertJsonToOutlineEntry(outline.getJSONObject(i)));
-                }
-
-            } catch (JSONException e) {
-                Log.e(TAG, "error", e);
-            }
+            runOnUiThread(() -> {
+                mOutlineViewModel.setOutline(outlineString);
+            });
         }
     }
 
@@ -203,7 +171,16 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        mSingleton = ApplicationSingleton.getInstance();
+
         setContentView(R.layout.webview);
+
+        mOutlineViewModel = new ViewModelProvider(this).get(OutlineViewModel.class);
+        mOutlineViewModel.getOutlineList().observe(this, outlineList -> {
+            Log.d(TAG, "outlineViewModel updating list");
+            mSingleton.setOutlineEntries(outlineList);
+            Toast.makeText(this, "Outline updated!", Toast.LENGTH_LONG).show();
+        });
 
         mWebView = findViewById(R.id.webview);
 
@@ -518,7 +495,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
         final int ids[] = { R.id.action_zoom_in, R.id.action_zoom_out, R.id.action_jump_to_page,
                 R.id.action_next, R.id.action_previous, R.id.action_first, R.id.action_last,
                 R.id.action_rotate_clockwise, R.id.action_rotate_counterclockwise,
-                R.id.action_view_document_properties };
+                R.id.action_view_document_properties, R.id.action_view_document_outline };
         if (mDocumentState < STATE_LOADED) {
             for (final int id : ids) {
                 final MenuItem item = menu.findItem(id);
@@ -587,6 +564,11 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
                 DocumentPropertiesFragment
                         .newInstance(mDocumentProperties)
                         .show(getSupportFragmentManager(), DocumentPropertiesFragment.TAG);
+                return true;
+
+            case R.id.action_view_document_outline:
+                Intent intent = new Intent(this, OutlineActivity.class);
+                startActivityForResult(intent, 500);
                 return true;
 
             case R.id.action_jump_to_page:

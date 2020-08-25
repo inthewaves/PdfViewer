@@ -72,4 +72,9 @@
         android:title="@string/action_view_document_properties"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/action_view_document_outline"
+        android:title="@string/action_view_document_outline"
+        app:showAsAction="never" />
+
 </menu>
