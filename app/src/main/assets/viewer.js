@@ -221,6 +221,9 @@ async function breadthFirstTraversal(outline) {
         return null;
     }
 
+    const pageNumberPromises = [];
+    const promiseToIndexMap = [];
+
     const outlineEntries = [];
 
     // Items at the top/root do not have a parent.
@@ -250,13 +253,23 @@ async function breadthFirstTraversal(outline) {
             }
 
             // Aiming to push every node in the tree into a single list.
+            // We will add the page numbers after.
+            const currentPagePromise = getPageNumberFromDestString(currentOutline[i].dest);
+            pageNumberPromises.push(currentPagePromise);
             outlineEntries.push({
                 title: currentOutline[i].title,
-                pageNumber: await getPageNumberFromDestString(currentOutline[i].dest),
+                pageNumber: -1,
                 parentIndex: currentParent,
             });
         }
     }
+
+    const promiseAll = Promise.all(pageNumberPromises).then(function(pageNumbers) {
+        for (let i = 0; i < outlineEntries.length; i++) {
+            outlineEntries[i].pageNumber = pageNumbers[i];
+        }
+    });
+    await promiseAll;
 
     return outlineEntries;
 }
