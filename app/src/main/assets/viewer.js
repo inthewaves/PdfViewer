@@ -206,24 +206,34 @@ function updateInset() {
 
 updateInset();
 
-async function getPageNumberFromDestString(destString) {
+async function getPageNumberFromDest(dest) {
     try {
-        const index = await pdfDoc.getPageIndex(destString[0]);
+        const index = await pdfDoc.getPageIndex(dest[0]);
         return parseInt(index) + 1;
     } catch (error) {
-        console.log("getPageNumberFromDestString error: " + error);
+        console.log("getPageNumberFromDest error: " + error);
         return -1;
     }
 }
 
+/**
+ * Does an iterative breadth-first traversal of all of the nodes in the
+ * outline tree, adding the nodes to an array. This function only returns
+ * the list of all possible nodes; it does not link children to parent nodes.
+ *
+ * @param {outline} dest obj A destination object as obtained from a node
+ * from the tree obtained from pdfDoc.getOutline
+ *
+ * @return {Promise} A promise that is resolved with an {Array} that contains
+ * all the nodes in the tree in a simplified format. The parents don't know
+ * who their children are, but the children know who their parents are.
+ */
 async function breadthFirstTraversal(outline) {
     if (outline === undefined || outline === null || outline.length == 0) {
         return null;
     }
 
     const pageNumberPromises = [];
-    const promiseToIndexMap = [];
-
     const outlineEntries = [];
 
     // Items at the top/root do not have a parent.
@@ -233,7 +243,7 @@ async function breadthFirstTraversal(outline) {
     }];
 
     while (outlineStack.length > 0) {
-        let currentOutlinePayload = outlineStack.pop();
+        let currentOutlinePayload = outlineStack.shift();
 
         // The current tree node we will iterate through.
         let currentOutline = currentOutlinePayload.items;
@@ -254,8 +264,12 @@ async function breadthFirstTraversal(outline) {
 
             // Aiming to push every node in the tree into a single list.
             // We will add the page numbers after.
-            const currentPagePromise = getPageNumberFromDestString(currentOutline[i].dest);
+            const currentPagePromise = pdfDoc.getPageIndex(currentOutline[i].dest[0]).then(
+                function(index) {
+                    return parseInt(index) + 1;
+                });
             pageNumberPromises.push(currentPagePromise);
+
             outlineEntries.push({
                 title: currentOutline[i].title,
                 pageNumber: -1,
@@ -264,6 +278,7 @@ async function breadthFirstTraversal(outline) {
         }
     }
 
+    // Add in the page numbers after the getPageIndex promises are all done.
     const promiseAll = Promise.all(pageNumberPromises).then(function(pageNumbers) {
         for (let i = 0; i < outlineEntries.length; i++) {
             outlineEntries[i].pageNumber = pageNumbers[i];
@@ -292,7 +307,7 @@ async function parseOutline(outline) {
         numPushes = numPushes + 1;
         outlineEntries.push({
             title: outline[i].title,
-            pageNumber: await getPageNumberFromDestString(outline[i].dest),
+            pageNumber: await getPageNumberFromDest(outline[i].dest),
             children: nestedOutlineEntry,
         });
     }
