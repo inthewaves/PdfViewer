@@ -240,7 +240,7 @@ async function breadthFirstTraversal(outline) {
     // Items at the top/root do not have a parent.
     const outlineQueue = [{
         items: outline,
-        parentOfItems: -1,
+        parentIndex: -1,
     }];
 
     while (outlineQueue.length > 0) {
@@ -250,7 +250,7 @@ async function breadthFirstTraversal(outline) {
         let currentOutline = currentOutlinePayload.items;
 
         // The list item that is the parent of all the nodes inside of the currentOutline array.
-        let currentParent = currentOutlinePayload.parentOfItems;
+        let currentParent = currentOutlinePayload.parentIndex;
 
         for (let i = 0; i < currentOutline.length; i++) {
             // Push any children of currentOutline[i] to the stack.
@@ -259,7 +259,7 @@ async function breadthFirstTraversal(outline) {
                     items: currentOutline[i].items,
                     // Since we don't push to outlineEntries until after this push,
                     // this is the correct index for the parent.
-                    parentOfItems: outlineEntries.length,
+                    parentIndex: outlineEntries.length,
                 });
             }
 
