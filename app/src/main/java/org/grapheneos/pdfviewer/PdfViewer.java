@@ -85,6 +85,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
     private static final int ALPHA_LOW = 130;
     private static final int ALPHA_HIGH = 255;
     private static final int ACTION_OPEN_DOCUMENT_REQUEST_CODE = 1;
+    private static final int ACTION_OUTLINE_REQUEST_CODE = 1000;
     private static final int STATE_LOADED = 1;
     private static final int STATE_END = 2;
     private static final int PADDING = 10;
@@ -471,6 +472,12 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
                 loadPdf();
                 invalidateOptionsMenu();
             }
+        } else if (requestCode == ACTION_OUTLINE_REQUEST_CODE &&
+                resultCode == Activity.RESULT_OK) {
+            if (resultData != null) {
+                int pageNumber = OutlineActivity.getPageNumberFromDataIntent(resultData);
+                onJumpToPageInDocument(pageNumber);
+            }
         }
     }
 
@@ -572,7 +579,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
 
             case R.id.action_view_document_outline:
                 Intent intent = new Intent(this, OutlineActivity.class);
-                startActivityForResult(intent, 500);
+                startActivityForResult(intent, ACTION_OUTLINE_REQUEST_CODE);
                 return true;
 
             case R.id.action_jump_to_page:
