@@ -216,42 +216,44 @@ async function getPageNumberFromDestString(destString) {
     }
 }
 
-async function depthFirstTraversal(outline) {
+async function breadthFirstTraversal(outline) {
     if (outline === undefined || outline === null || outline.length == 0) {
         return null;
     }
 
     const outlineEntries = [];
+
+    // Items at the top/root do not have a parent.
     const outlineStack = [{
         items: outline,
         parentOfItems: -1,
     }];
-    let currentOutline;
-    let currentParent;
-    let currentLevel = 0;
+
     while (outlineStack.length > 0) {
         let currentOutlinePayload = outlineStack.pop();
 
-        // The current node we will iterate through.
-        currentOutline = currentOutlinePayload.items;
+        // The current tree node we will iterate through.
+        let currentOutline = currentOutlinePayload.items;
 
-        // The node that is the parent of all the nodes inside of the currentOutline array.
-        currentParent = currentOutlinePayload.parentOfItems;
+        // The list item that is the parent of all the nodes inside of the currentOutline array.
+        let currentParent = currentOutlinePayload.parentOfItems;
 
         for (let i = 0; i < currentOutline.length; i++) {
+            // Push any children of currentOutline[i] to the stack.
             if (currentOutline[i].items.length > 0) {
                 outlineStack.push({
                     items: currentOutline[i].items,
-                    // Since we don't push to the stack until after this call,
-                    // this is the correct index.
+                    // Since we don't push to outlineEntries until after this push,
+                    // this is the correct index for the parent.
                     parentOfItems: outlineEntries.length,
                 });
             }
 
+            // Aiming to push every node in the tree into a single list.
             outlineEntries.push({
                 title: currentOutline[i].title,
                 pageNumber: await getPageNumberFromDestString(currentOutline[i].dest),
-                parentIndex: currentParent
+                parentIndex: currentParent,
             });
         }
     }
@@ -297,17 +299,44 @@ pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(
     });
 
 
+    /*
+        Times:
+        - 21:24:54.753 to 21:24:57.531
+        -
+     */
     pdfDoc.getOutline().then(function(outline) {
         // https://github.com/mozilla/pdf.js/blob/a6db0457893b7bc960d63a8aa07b9091ddea84e0/src/display/api.js#L703-L722
-        console.log("depthFirstTraversal: beginning conversion");
-        depthFirstTraversal(outline).then(function(outlineEntries) {
-            console.log("depthFirstTraversal done: " + JSON.stringify(outlineEntries));
-                            console.log("size is " + outlineEntries.length);
+        console.log("breadthFirstTraversal: beginning conversion");
+        breadthFirstTraversal(outline).then(function(outlineEntries) {
+            console.log("breadthFirstTraversal done: " + JSON.stringify(outlineEntries));
+            console.log("size is " + outlineEntries.length);
             channel.setOutline(JSON.stringify(outlineEntries));
         });
     }).catch(function(error) {
         console.log("getOutline error: " + error);
     });
+
+
+    /*
+        Times:
+        - 21:01:43.593 to 21:01:46.250
+        - 21:06:26.748 to 21:06:29.471
+        - 21:07:20.218 to 21:07:23.081
+        - 21:07:56.492 to 21:07:59.288
+        - 21:22:23.391 to 21:22:26.070
+     */
+    /*
+    pdfDoc.getOutline().then(function(outline) {
+            // https://github.com/mozilla/pdf.js/blob/a6db0457893b7bc960d63a8aa07b9091ddea84e0/src/display/api.js#L703-L722
+            console.log("parseOutline: beginning conversion");
+            parseOutline(outline).then(function(outlineEntries) {
+                console.log("parseOutline: finished conversion: " + JSON.stringify(outlineEntries));
+                console.log("parseOutline: size is " + numPushes);
+            });
+        }).catch(function(error) {
+            console.log("getOutline error: " + error);
+        });
+    */
 
     renderPage(channel.getPage(), false, false);
 }).catch(function(error) {
