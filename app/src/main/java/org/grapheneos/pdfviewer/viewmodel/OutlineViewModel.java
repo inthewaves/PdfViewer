@@ -48,18 +48,18 @@ public class OutlineViewModel extends ViewModel {
                 final OutlineEntry currentEntry = convertJsonToOutlineEntry(currentEntryAsJson);
                 allOutlineEntries.add(currentEntry);
 
-                final int indexOfParent = currentEntryAsJson.optInt("parentIndex", -1);
-                if (indexOfParent == -1) {
+                final int parentIndex = currentEntryAsJson.optInt("parentIndex", -1);
+                if (parentIndex == -1) {
                     // Root element
                     topLevelOutline.add(currentEntry);
-                } else if (indexOfParent != i) {
-                    parentChildMap.computeIfAbsent(indexOfParent, k -> new ArrayList<>())
+                } else if (parentIndex != i) {
+                    parentChildMap.computeIfAbsent(parentIndex, k -> new ArrayList<>())
                             .add(currentEntry);
                 }
             }
 
-            // Finally, add the list of children to each outline node, or an empty list if
-            // no children.
+            // Finally, check every outline node to see whether they have children, and
+            // assign it if it does.
             for (int parentIndex = 0; parentIndex < outline.length(); parentIndex++) {
                 final List<OutlineEntry> children = parentChildMap.get(parentIndex);
                 allOutlineEntries.get(parentIndex).setChildren(children != null ? children
@@ -77,9 +77,7 @@ public class OutlineViewModel extends ViewModel {
             return null;
         }
 
-        String title = jsonObject.optString("title");
-        String pageNumber = jsonObject.optString("pageNumber");
-
-        return new OutlineEntry(title, Integer.parseInt(pageNumber), null);
+        return new OutlineEntry(jsonObject.optString("title"),
+                jsonObject.optInt("pageNumber"), null);
     }
 }
