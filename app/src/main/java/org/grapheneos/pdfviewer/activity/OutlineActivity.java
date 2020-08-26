@@ -85,16 +85,21 @@ public class OutlineActivity extends AppCompatActivity
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
-                if (!mFragmentManager.getFragments().isEmpty()) {
+                Log.d(TAG, "onOptionsItemSelected: mFragmentManager.getBackStackEntryCount(): " + mFragmentManager.getBackStackEntryCount());
+                if (mFragmentManager.getBackStackEntryCount() > 1) {
                     popStackAndAddFragment();
                 } else {
                     Log.d(TAG, "onOptionsItemSelected: returning false()");
+                    setResult(Activity.RESULT_CANCELED);
+                    finish();
                     return false;
                 }
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
+
+
 
     @Override
     public void onAttachFragment(@NonNull Fragment fragment) {
