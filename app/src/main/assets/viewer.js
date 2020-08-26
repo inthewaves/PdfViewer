@@ -218,11 +218,13 @@ async function getPageNumberFromDest(dest) {
 
 /**
  * Does an iterative breadth-first traversal of all of the nodes in the
- * outline tree, adding the nodes to an array. This function only returns
- * the list of all possible nodes; it does not link children to parent nodes.
+ * outline tree, adding the nodes to an array. Since the outline tree is
+ * ordered, the keys in each node will be sorted as well. This function only
+ * returns the list of all possible nodes; it does not link children to parent
+ * nodes.
  *
- * @param {outline} dest obj A destination object as obtained from a node
- * from the tree obtained from pdfDoc.getOutline
+ * @param {Array} outline The root node of the outline tree as obtained by
+ * pdfDoc.getOutline. This is assumed to be an ordered tree.
  *
  * @return {Promise} A promise that is resolved with an {Array} that contains
  * all the nodes in the tree in a simplified format. The parents don't know
