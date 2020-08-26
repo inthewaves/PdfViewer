@@ -227,6 +227,7 @@ async function getPageNumberFromDest(dest) {
  * @return {Promise} A promise that is resolved with an {Array} that contains
  * all the nodes in the tree in a simplified format. The parents don't know
  * who their children are, but the children know who their parents are.
+ * The linking of parents to their children are done in Java.
  */
 async function breadthFirstTraversal(outline) {
     if (outline === undefined || outline === null || outline.length == 0) {
@@ -237,13 +238,13 @@ async function breadthFirstTraversal(outline) {
     const outlineEntries = [];
 
     // Items at the top/root do not have a parent.
-    const outlineStack = [{
+    const outlineQueue = [{
         items: outline,
         parentOfItems: -1,
     }];
 
-    while (outlineStack.length > 0) {
-        let currentOutlinePayload = outlineStack.shift();
+    while (outlineQueue.length > 0) {
+        let currentOutlinePayload = outlineQueue.shift();
 
         // The current tree node we will iterate through.
         let currentOutline = currentOutlinePayload.items;
@@ -254,7 +255,7 @@ async function breadthFirstTraversal(outline) {
         for (let i = 0; i < currentOutline.length; i++) {
             // Push any children of currentOutline[i] to the stack.
             if (currentOutline[i].items.length > 0) {
-                outlineStack.push({
+                outlineQueue.push({
                     items: currentOutline[i].items,
                     // Since we don't push to outlineEntries until after this push,
                     // this is the correct index for the parent.
