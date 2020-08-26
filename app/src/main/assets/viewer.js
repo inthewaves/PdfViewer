@@ -216,7 +216,56 @@ async function getPageNumberFromDestString(destString) {
     }
 }
 
+async function depthFirstTraversal(outline) {
+    if (outline === undefined || outline === null || outline.length == 0) {
+        return null;
+    }
+
+    const outlineEntries = [];
+    const outlineStack = [{
+        items: outline,
+        allOwnedBy: -1,
+    }];
+    let currentOutline;
+    let currentOwner;
+    let currentLevel = 0;
+    while (outlineStack.length > 0) {
+        let currentOutlinePayload = outlineStack.pop();
+
+        // The current node we will iterate through.
+        currentOutline = currentOutlinePayload.items;
+
+        // The node that owns all the nodes inside of the currentOutline array.
+        currentOwner = currentOutlinePayload.allOwnedBy;
+
+        for (let i = 0; i < currentOutline.length; i++) {
+            if (currentOutline[i].items.length > 0) {
+                outlineStack.push({
+                    items: currentOutline[i].items,
+                    // Since we don't push to the stack until after this call,
+                    // this is the correct index.
+                    allOwnedBy: outlineEntries.length,
+                });
+            }
+
+            outlineEntries.push({
+                title: currentOutline[i].title,
+                pageNumber: await getPageNumberFromDestString(currentOutline[i].dest),
+                ownedBy: currentOwner
+            });
+        }
+    }
+
+    return outlineEntries;
+}
+
+let numPushes = 0;
+
 async function parseOutline(outline) {
+    if (outline === null) {
+        return null;
+    }
+
     const outlineEntries = [];
 
     for (let i = 0; i < outline.length; i++) {
@@ -225,6 +274,7 @@ async function parseOutline(outline) {
             nestedOutlineEntry = await parseOutline(outline[i].items);
         }
 
+        numPushes = numPushes + 1;
         outlineEntries.push({
             title: outline[i].title,
             pageNumber: await getPageNumberFromDestString(outline[i].dest),
@@ -236,6 +286,7 @@ async function parseOutline(outline) {
 }
 
 pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(newDoc) {
+    numPushes = 0;
     pdfDoc = newDoc;
 
     channel.setNumPages(pdfDoc.numPages);
@@ -250,9 +301,17 @@ pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(
         // https://github.com/mozilla/pdf.js/blob/a6db0457893b7bc960d63a8aa07b9091ddea84e0/src/display/api.js#L703-L722
         console.log("getOutline: beginning conversion");
         parseOutline(outline).then(function(outlineEntries) {
-            console.log("getOutline: finished conversion");
+            console.log("getOutline: finished conversion with " + numPushes + " pushes.");
             channel.setOutline(JSON.stringify(outlineEntries));
+
+            console.log("Doing depthFirstTraversal on " + JSON.stringify(outline));
+            depthFirstTraversal(outline).then(function(outlineEntries) {
+                console.log("depthFirstTraversal done: " + JSON.stringify(outlineEntries));
+                console.log("size is " + outlineEntries.length);
+            });
         });
+
+
     }).catch(function(error) {
         console.log("getOutline error: " + error);
     });
