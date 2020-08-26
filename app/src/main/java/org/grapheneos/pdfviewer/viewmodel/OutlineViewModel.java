@@ -14,7 +14,9 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class OutlineViewModel extends ViewModel {
     private static final String TAG = "OutlineViewModel";
@@ -32,13 +34,39 @@ public class OutlineViewModel extends ViewModel {
     public void setOutlineFromJsonString(@NonNull String outlineString) {
         try {
             JSONArray outline = new JSONArray(outlineString);
-            List<OutlineEntry> outlineEntries = new ArrayList<>(outline.length());
+            List<OutlineEntry> allOutlineEntries = new ArrayList<>(outline.length());
+            List<OutlineEntry> topLevelOutline = new ArrayList<>();
+
+            // Maps indices of parents to their children.
+            Map<Integer, List<OutlineEntry>> parentChildMap = new HashMap<>();
+
             Log.d(TAG, "converting JSON to OutlineEntry...");
+
+            // Go through all the keys once to create the list of children for each node
             for (int i = 0; i < outline.length(); i++) {
-                outlineEntries.add(convertJsonToOutlineEntry(outline.getJSONObject(i)));
+                JSONObject currentEntryAsJson = outline.getJSONObject(i);
+                OutlineEntry currentEntry = convertJsonToOutlineEntry(currentEntryAsJson);
+                allOutlineEntries.add(currentEntry);
+
+                int indexOfParent = currentEntryAsJson.optInt("parentIndex", -1);
+                if (indexOfParent == -1) {
+                    // Root element
+                    topLevelOutline.add(currentEntry);
+                } else if (indexOfParent != i) {
+                    parentChildMap.computeIfAbsent(indexOfParent, k -> new ArrayList<>())
+                            .add(currentEntry);
+                }
             }
-            Log.d(TAG, "done converting JSON to OutlineEntry");
-            mOutlineList.setValue(outlineEntries);
+
+            // Finally, add the list of children to each outline node, or an empty list if
+            // no children.
+            for (int parentIndex = 0; parentIndex < outline.length(); parentIndex++) {
+                List<OutlineEntry> children = parentChildMap.get(parentIndex);
+                allOutlineEntries.get(parentIndex).setChildren(children != null ? children
+                        : Collections.emptyList());
+            }
+
+            mOutlineList.setValue(topLevelOutline);
         } catch (JSONException e) {
             Log.e(TAG, "error", e);
         }
@@ -49,21 +77,9 @@ public class OutlineViewModel extends ViewModel {
             return null;
         }
 
-        String title = jsonObject.optString("title", "error");
+        String title = jsonObject.optString("title");
         String pageNumber = jsonObject.optString("pageNumber");
 
-        JSONArray nested = jsonObject.optJSONArray("children");
-        List<OutlineEntry> children;
-        if (nested == null) {
-            children = Collections.emptyList();
-        } else {
-            children = new ArrayList<>(nested.length());
-            for (int i = 0; i < nested.length(); i++) {
-                OutlineEntry child = convertJsonToOutlineEntry(nested.optJSONObject(i));
-                children.add(child);
-            }
-        }
-
-        return new OutlineEntry(title, Integer.parseInt(pageNumber), children);
+        return new OutlineEntry(title, Integer.parseInt(pageNumber), null);
     }
 }

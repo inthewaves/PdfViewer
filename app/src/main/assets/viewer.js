@@ -224,10 +224,10 @@ async function depthFirstTraversal(outline) {
     const outlineEntries = [];
     const outlineStack = [{
         items: outline,
-        allOwnedBy: -1,
+        parentOfItems: -1,
     }];
     let currentOutline;
-    let currentOwner;
+    let currentParent;
     let currentLevel = 0;
     while (outlineStack.length > 0) {
         let currentOutlinePayload = outlineStack.pop();
@@ -235,8 +235,8 @@ async function depthFirstTraversal(outline) {
         // The current node we will iterate through.
         currentOutline = currentOutlinePayload.items;
 
-        // The node that owns all the nodes inside of the currentOutline array.
-        currentOwner = currentOutlinePayload.allOwnedBy;
+        // The node that is the parent of all the nodes inside of the currentOutline array.
+        currentParent = currentOutlinePayload.parentOfItems;
 
         for (let i = 0; i < currentOutline.length; i++) {
             if (currentOutline[i].items.length > 0) {
@@ -244,14 +244,14 @@ async function depthFirstTraversal(outline) {
                     items: currentOutline[i].items,
                     // Since we don't push to the stack until after this call,
                     // this is the correct index.
-                    allOwnedBy: outlineEntries.length,
+                    parentOfItems: outlineEntries.length,
                 });
             }
 
             outlineEntries.push({
                 title: currentOutline[i].title,
                 pageNumber: await getPageNumberFromDestString(currentOutline[i].dest),
-                ownedBy: currentOwner
+                parentIndex: currentParent
             });
         }
     }
@@ -299,19 +299,12 @@ pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(
 
     pdfDoc.getOutline().then(function(outline) {
         // https://github.com/mozilla/pdf.js/blob/a6db0457893b7bc960d63a8aa07b9091ddea84e0/src/display/api.js#L703-L722
-        console.log("getOutline: beginning conversion");
-        parseOutline(outline).then(function(outlineEntries) {
-            console.log("getOutline: finished conversion with " + numPushes + " pushes.");
+        console.log("depthFirstTraversal: beginning conversion");
+        depthFirstTraversal(outline).then(function(outlineEntries) {
+            console.log("depthFirstTraversal done: " + JSON.stringify(outlineEntries));
+                            console.log("size is " + outlineEntries.length);
             channel.setOutline(JSON.stringify(outlineEntries));
-
-            console.log("Doing depthFirstTraversal on " + JSON.stringify(outline));
-            depthFirstTraversal(outline).then(function(outlineEntries) {
-                console.log("depthFirstTraversal done: " + JSON.stringify(outlineEntries));
-                console.log("size is " + outlineEntries.length);
-            });
         });
-
-
     }).catch(function(error) {
         console.log("getOutline error: " + error);
     });
