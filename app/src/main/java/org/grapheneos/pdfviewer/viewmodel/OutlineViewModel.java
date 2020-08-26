@@ -33,22 +33,22 @@ public class OutlineViewModel extends ViewModel {
 
     public void setOutlineFromJsonString(@NonNull String outlineString) {
         try {
-            JSONArray outline = new JSONArray(outlineString);
-            List<OutlineEntry> allOutlineEntries = new ArrayList<>(outline.length());
-            List<OutlineEntry> topLevelOutline = new ArrayList<>();
+            final JSONArray outline = new JSONArray(outlineString);
+            final List<OutlineEntry> allOutlineEntries = new ArrayList<>(outline.length());
+            final List<OutlineEntry> topLevelOutline = new ArrayList<>();
 
             // Maps indices of parents to their children.
-            Map<Integer, List<OutlineEntry>> parentChildMap = new HashMap<>();
+            final Map<Integer, List<OutlineEntry>> parentChildMap = new HashMap<>();
 
             Log.d(TAG, "converting JSON to OutlineEntry...");
 
             // Go through all the keys once to create the list of children for each node
             for (int i = 0; i < outline.length(); i++) {
-                JSONObject currentEntryAsJson = outline.getJSONObject(i);
-                OutlineEntry currentEntry = convertJsonToOutlineEntry(currentEntryAsJson);
+                final JSONObject currentEntryAsJson = outline.getJSONObject(i);
+                final OutlineEntry currentEntry = convertJsonToOutlineEntry(currentEntryAsJson);
                 allOutlineEntries.add(currentEntry);
 
-                int indexOfParent = currentEntryAsJson.optInt("parentIndex", -1);
+                final int indexOfParent = currentEntryAsJson.optInt("parentIndex", -1);
                 if (indexOfParent == -1) {
                     // Root element
                     topLevelOutline.add(currentEntry);
@@ -61,7 +61,7 @@ public class OutlineViewModel extends ViewModel {
             // Finally, add the list of children to each outline node, or an empty list if
             // no children.
             for (int parentIndex = 0; parentIndex < outline.length(); parentIndex++) {
-                List<OutlineEntry> children = parentChildMap.get(parentIndex);
+                final List<OutlineEntry> children = parentChildMap.get(parentIndex);
                 allOutlineEntries.get(parentIndex).setChildren(children != null ? children
                         : Collections.emptyList());
             }
