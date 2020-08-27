@@ -245,6 +245,7 @@ async function breadthFirstTraversal(outline) {
         parentIndex: -1,
     }];
 
+    console.log("breadthFirstTraversal: begin");
     while (outlineQueue.length > 0) {
         let currentOutlinePayload = outlineQueue.shift();
 
@@ -270,7 +271,10 @@ async function breadthFirstTraversal(outline) {
             const currentPagePromise = pdfDoc.getPageIndex(currentOutline[i].dest[0]).then(
                 function(index) {
                     return parseInt(index) + 1;
-                });
+                }).catch(function(error) {
+                    console.log("pdfDoc.getPageIndex error: " + error);
+                    return -1;
+                });;
             pageNumberPromises.push(currentPagePromise);
 
             outlineEntries.push({
@@ -337,12 +341,15 @@ pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(
      */
     pdfDoc.getOutline().then(function(outline) {
         // https://github.com/mozilla/pdf.js/blob/a6db0457893b7bc960d63a8aa07b9091ddea84e0/src/display/api.js#L703-L722
+        console.log("outline is " + JSON.stringify(outline))
         console.log("breadthFirstTraversal: beginning conversion");
         breadthFirstTraversal(outline).then(function(outlineEntries) {
             console.log("breadthFirstTraversal done: " + JSON.stringify(outlineEntries));
             console.log("size is " + outlineEntries.length);
             channel.setOutline(JSON.stringify(outlineEntries));
-        });
+        }).catch(function(error) {
+            console.log("breadthFirstTraversal error: " + error);
+        });;
     }).catch(function(error) {
         console.log("getOutline error: " + error);
     });
