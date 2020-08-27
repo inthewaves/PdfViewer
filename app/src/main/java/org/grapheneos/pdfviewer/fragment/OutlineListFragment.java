@@ -61,13 +61,21 @@ public class OutlineListFragment extends Fragment {
             itemView.setClickable(true);
             mTitleTextView = itemView.findViewById(R.id.outlineEntryTitle);
             mPageTextView = itemView.findViewById(R.id.outlinePageTextView);
+            mPageTextView.setVisibility(View.INVISIBLE);
             mHasChildrenImageView = itemView.findViewById(R.id.outlineHasChildrenImageView);
         }
 
         public void bind(OutlineEntry outlineEntry) {
             mOutlineEntry = outlineEntry;
             mTitleTextView.setText(outlineEntry.getTitle());
-            mPageTextView.setText(String.valueOf(outlineEntry.getPageNumber()));
+            final String pageNumber = String.valueOf(outlineEntry.getPageNumber());
+            if ("-1".equals(pageNumber)) {
+                mPageTextView.setVisibility(View.INVISIBLE);
+            } else {
+                mPageTextView.setVisibility(View.INVISIBLE);
+                mPageTextView.setText(pageNumber);
+            }
+
             mHasChildrenImageView.setVisibility(outlineEntry.getChildren().isEmpty()
                     ? View.INVISIBLE : View.VISIBLE);
         }
