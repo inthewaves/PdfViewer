@@ -531,7 +531,7 @@ public class PdfViewerFragment extends Fragment {
 
             case R.id.action_view_document_properties:
                 DocumentPropertiesFragment
-                        .newInstance()
+                        .newInstance(mViewModel.getDocumentProperties().getValue())
                         .show(getParentFragmentManager(), DocumentPropertiesFragment.TAG);
                 return true;
 
