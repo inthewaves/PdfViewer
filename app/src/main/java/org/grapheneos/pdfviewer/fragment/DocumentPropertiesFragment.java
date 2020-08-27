@@ -29,12 +29,6 @@ public class DocumentPropertiesFragment extends DialogFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        mModel = new ViewModelProvider(requireActivity()).get(PdfViewerViewModel.class);
-
-        List<CharSequence> list = mModel.getDocumentProperties().getValue();
-        mAdapter = new ArrayAdapter<>(requireActivity(), android.R.layout.simple_list_item_1,
-                list != null ? list : Collections.emptyList());
     }
 
     @NonNull
@@ -43,11 +37,14 @@ public class DocumentPropertiesFragment extends DialogFragment {
         final Activity activity = requireActivity();
         final AlertDialog.Builder dialog = new AlertDialog.Builder(activity)
                 .setPositiveButton(android.R.string.ok, null);
+
+        mModel = new ViewModelProvider(requireActivity()).get(PdfViewerViewModel.class);
+        final List<CharSequence> list = mModel.getDocumentProperties().getValue();
+        mAdapter = new ArrayAdapter<>(requireActivity(), android.R.layout.simple_list_item_1,
+                list != null ? list : Collections.emptyList());
         dialog.setAdapter(mAdapter, null);
 
-        final List<CharSequence> list = mModel.getDocumentProperties().getValue();
         dialog.setTitle(getStringIdForPropertiesState(list));
-
         final AlertDialog alertDialog = dialog.create();
         mModel.getDocumentProperties().observe(requireActivity(), charSequences -> {
             alertDialog.setTitle(getStringIdForPropertiesState(charSequences));

@@ -31,7 +31,8 @@ private const val STATE_DOCUMENT_PROPERTIES = "documentProperties"
 
 class PdfViewerViewModel(private val state: SavedStateHandle) : ViewModel() {
     private val documentProperties: MutableLiveData<List<CharSequence>> by lazy {
-        MutableLiveData<List<CharSequence>>(ArrayList())
+        MutableLiveData<List<CharSequence>>(
+                state.get(STATE_DOCUMENT_PROPERTIES) ?: ArrayList())
     }
     var uri: Uri? = null
     var page: Int = 0
@@ -54,6 +55,7 @@ class PdfViewerViewModel(private val state: SavedStateHandle) : ViewModel() {
             set(STATE_PAGE, page)
             set(STATE_ZOOMRATIO, zoomRatio)
             set(STATE_ORIENTATIONDEGREES, documentOrientationDegrees)
+            set(STATE_DOCUMENT_PROPERTIES, documentProperties.value as ArrayList<CharSequence>)
         }
     }
 
