@@ -93,7 +93,6 @@ public class PdfViewerFragment extends Fragment {
     private Snackbar mSnackbar;
 
     private PdfViewerViewModel mViewModel;
-    private boolean mIsLoadingNewPdf;
 
     private class Channel {
         @JavascriptInterface
@@ -167,7 +166,7 @@ public class PdfViewerFragment extends Fragment {
     @Override
     @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        mIsLoadingNewPdf = savedInstanceState == null;
+
 
         mViewModel = new ViewModelProvider(requireActivity()).get(PdfViewerViewModel.class);
 
@@ -298,11 +297,12 @@ public class PdfViewerFragment extends Fragment {
         mSnackbar = Snackbar.make(mWebView, "", Snackbar.LENGTH_LONG);
 
         final Intent intent = requireActivity().getIntent();
-        if (Intent.ACTION_VIEW.equals(intent.getAction())) {
+        if (savedInstanceState == null && Intent.ACTION_VIEW.equals(intent.getAction())) {
             if (!"application/pdf".equals(intent.getType())) {
                 mSnackbar.setText(R.string.invalid_mime_type).show();
                 return;
             }
+
             mViewModel.setUri(intent.getData());
             mViewModel.setPage(1);
         }
@@ -314,11 +314,11 @@ public class PdfViewerFragment extends Fragment {
                 return;
             }
 
-            loadPdf();
+            loadPdf(savedInstanceState == null);
         }
     }
 
-    private void loadPdf() {
+    private void loadPdf(boolean isLoadingNewPdf) {
         final Uri uri = mViewModel.getUri();
         if (uri == null) {
             return;
@@ -335,8 +335,7 @@ public class PdfViewerFragment extends Fragment {
             return;
         }
 
-        if (mIsLoadingNewPdf) {
-            mIsLoadingNewPdf = false;
+        if (isLoadingNewPdf) {
             mViewModel.clearDocumentProperties();
         }
 
@@ -363,8 +362,7 @@ public class PdfViewerFragment extends Fragment {
                 public void onActivityResult(Uri uri) {
                     mViewModel.setUri(uri);
                     mViewModel.setPage(1);
-                    mIsLoadingNewPdf = true;
-                    loadPdf();
+                    loadPdf(true);
                 }
             });
 
