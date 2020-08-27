@@ -41,6 +41,7 @@ import org.grapheneos.pdfviewer.viewmodel.PdfViewerViewModel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.List;
 
 public class PdfViewerFragment extends Fragment {
     public static final String TAG = "PdfViewer";
@@ -92,6 +93,7 @@ public class PdfViewerFragment extends Fragment {
     private Snackbar mSnackbar;
 
     private PdfViewerViewModel mViewModel;
+    private boolean mIsLoadingNewPdf;
 
     private class Channel {
         @JavascriptInterface
@@ -143,7 +145,6 @@ public class PdfViewerFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
-
         getParentFragmentManager().setFragmentResultListener(JumpToPageFragment.REQUEST_KEY,
                 this, (requestKey, result) -> {
                     final int newPage = result.getInt(JumpToPageFragment.BUNDLE_KEY);
@@ -166,6 +167,8 @@ public class PdfViewerFragment extends Fragment {
     @Override
     @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        mIsLoadingNewPdf = savedInstanceState == null;
+
         mViewModel = new ViewModelProvider(requireActivity()).get(PdfViewerViewModel.class);
 
         mWebView = view.findViewById(R.id.webview);
@@ -328,10 +331,15 @@ public class PdfViewerFragment extends Fragment {
             mInputStream = requireActivity().getContentResolver().openInputStream(uri);
         } catch (IOException e) {
             mSnackbar.setText(R.string.io_error).show();
+            mViewModel.clearDocumentProperties();
             return;
         }
 
-        mViewModel.clearDocumentProperties();
+        if (mIsLoadingNewPdf) {
+            mIsLoadingNewPdf = false;
+            mViewModel.clearDocumentProperties();
+        }
+
         mWebView.loadUrl("https://localhost/viewer.html");
     }
 
@@ -355,6 +363,7 @@ public class PdfViewerFragment extends Fragment {
                 public void onActivityResult(Uri uri) {
                     mViewModel.setUri(uri);
                     mViewModel.setPage(1);
+                    mIsLoadingNewPdf = true;
                     loadPdf();
                 }
             });
@@ -515,7 +524,7 @@ public class PdfViewerFragment extends Fragment {
 
             case R.id.action_view_document_properties:
                 DocumentPropertiesFragment
-                        .newInstance(mViewModel.getDocumentProperties().getValue())
+                        .newInstance()
                         .show(getParentFragmentManager(), DocumentPropertiesFragment.TAG);
                 return true;
 

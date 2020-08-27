@@ -9,6 +9,7 @@ import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.StyleSpan
 import android.util.Log
+import androidx.annotation.NonNull
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -36,16 +37,19 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         MutableLiveData<List<CharSequence>>()
     }
 
+    @NonNull
     fun getDocumentProperties(): LiveData<List<CharSequence>> = documentProperties
 
     fun clearDocumentProperties() {
-        documentProperties.postValue(null)
+        val list = documentProperties.value as? ArrayList<CharSequence> ?: ArrayList()
+        list.clear()
+        documentProperties.postValue(list)
     }
 
     fun loadProperties(propertiesString: String) {
         if (uri == null) {
             Log.w(TAG, "Failed to parse properties: Uri is null")
-            documentProperties.postValue(null)
+            clearDocumentProperties()
             return
         }
 
@@ -78,11 +82,17 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
                 for (i in 2 until names.size) {
                     properties.add(getProperty(json, names[i], specNames[i - 2]))
                 }
-                documentProperties.postValue(properties)
+
                 Log.d(TAG, "Successfully parsed properties")
+                val list = documentProperties.value as ArrayList<CharSequence>
+                list.run {
+                    clear()
+                    addAll(properties)
+                    documentProperties.postValue(this)
+                }
             } catch (e: JSONException) {
+                clearDocumentProperties()
                 Log.e(TAG, "Failed to parse properties: ${e.message}", e)
-                documentProperties.postValue(null)
             }
         }
     }
