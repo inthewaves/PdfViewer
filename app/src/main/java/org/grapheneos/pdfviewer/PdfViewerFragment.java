@@ -369,9 +369,11 @@ public class PdfViewerFragment extends Fragment {
             new ActivityResultContracts.GetContent(), new ActivityResultCallback<Uri>() {
                 @Override
                 public void onActivityResult(Uri uri) {
-                    mViewModel.setUri(uri);
-                    mViewModel.setPage(1);
-                    loadPdf(true);
+                    if (uri != null) {
+                        mViewModel.setUri(uri);
+                        mViewModel.setPage(1);
+                        loadPdf(true);
+                    }
                 }
             });
 
