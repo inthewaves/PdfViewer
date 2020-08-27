@@ -122,11 +122,12 @@ public class PdfViewerFragment extends Fragment {
 
         @JavascriptInterface
         public void setDocumentProperties(final String properties) {
-            if (mViewModel.getDocumentProperties().getValue() != null) {
-                throw new SecurityException("DocumentProperties not null");
+            final List<CharSequence> list = mViewModel.getDocumentProperties().getValue();
+            if (list != null && list.isEmpty()) {
+                mViewModel.loadProperties(properties);
+            } else {
+                Log.d(TAG, "setDocumentProperties: did not load in properties");
             }
-
-            mViewModel.loadProperties(properties);
         }
     }
 
