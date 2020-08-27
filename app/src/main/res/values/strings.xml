@@ -20,4 +20,6 @@
     <string name="invalid_mime_type">Cannot open file with invalid mime type</string>
     <string name="legacy_file_uri">Cannot open legacy file paths from insecure apps</string>
     <string name="io_error">Received I/O error trying to open content</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
