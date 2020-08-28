@@ -218,74 +218,65 @@ async function getPageNumberFromDest(dest) {
 
 /**
  * Does an iterative breadth-first traversal of all of the nodes in the
- * outline tree, adding the nodes to an array. Since the outline tree is
- * ordered, the keys in each node will be sorted as well. This function only
- * returns the list of all possible nodes; it does not link children to parent
- * nodes.
+ * outline tree, adding the nodes to an array.
  *
  * @param {Array} outline The root node of the outline tree as obtained by
  * pdfDoc.getOutline. This is assumed to be an ordered tree.
  *
  * @return {Promise} A promise that is resolved with an {Array} that contains
- * all the nodes in the tree in a simplified format. The parents don't know
- * who their children are, but the children know who their parents are.
- * The linking of parents to their children are done in Java.
+ * all the nodes in the tree. The parents don't know who their children are,
+ * but the children know who their parents are. The linking of parents to their
+ * children is done in Java.
  */
 async function breadthFirstTraversal(outline) {
     if (outline === undefined || outline === null || outline.length == 0) {
         return null;
     }
 
+    // There's a 1-1 correspondence between pageNumberPromises and outlineEntries.
     const pageNumberPromises = [];
     const outlineEntries = [];
 
     // Items at the top/root do not have a parent.
     const outlineQueue = [{
-        items: outline,
+        children: outline,
         parentIndex: -1,
     }];
 
-    console.log("breadthFirstTraversal: begin");
     while (outlineQueue.length > 0) {
         let currentOutlinePayload = outlineQueue.shift();
+        let indexOfParentOfCurrentChildren = currentOutlinePayload.parentIndex;
+        let currentChildren = currentOutlinePayload.children;
 
-        // The current tree node we will iterate through.
-        let currentOutline = currentOutlinePayload.items;
-
-        // The list item that is the parent of all the nodes inside of the currentOutline array.
-        let currentParent = currentOutlinePayload.parentIndex;
-
-        for (let i = 0; i < currentOutline.length; i++) {
-            // Push any children of currentOutline[i] to the stack.
-            if (currentOutline[i].items.length > 0) {
+        for (let i = 0; i < currentChildren.length; i++) {
+            // Push any children of currentChildren[i] to the queue.
+            if (currentChildren[i].items.length > 0) {
+                // The index of currentChildren[i] is outlineEntries.length
+                // since info for currentChildren[i] will be pushed to
+                // outlineEntries after.
                 outlineQueue.push({
-                    items: currentOutline[i].items,
-                    // Since we don't push to outlineEntries until after this push,
-                    // this is the correct index for the parent.
+                    children: currentChildren[i].items,
                     parentIndex: outlineEntries.length,
                 });
             }
 
-            // Aiming to push every node in the tree into a single list.
-            // We will add the page numbers after.
-            const currentPagePromise = pdfDoc.getPageIndex(currentOutline[i].dest[0]).then(
+            const currentPagePromise = pdfDoc.getPageIndex(currentChildren[i].dest[0]).then(
                 function(index) {
                     return parseInt(index) + 1;
                 }).catch(function(error) {
                     console.log("pdfDoc.getPageIndex error: " + error);
                     return -1;
-                });;
+                });
             pageNumberPromises.push(currentPagePromise);
 
             outlineEntries.push({
-                title: currentOutline[i].title,
+                title: currentChildren[i].title,
                 pageNumber: -1,
-                parentIndex: currentParent,
+                parentIndex: indexOfParentOfCurrentChildren,
             });
         }
     }
 
-    // Add in the page numbers after the getPageIndex promises are all done.
     const promiseAll = Promise.all(pageNumberPromises).then(function(pageNumbers) {
         for (let i = 0; i < outlineEntries.length; i++) {
             outlineEntries[i].pageNumber = pageNumbers[i];
@@ -296,56 +287,19 @@ async function breadthFirstTraversal(outline) {
     return outlineEntries;
 }
 
-let numPushes = 0;
-
-async function parseOutline(outline) {
-    if (outline === null) {
-        return null;
-    }
-
-    const outlineEntries = [];
-
-    for (let i = 0; i < outline.length; i++) {
-        let nestedOutlineEntry = null;
-        if (outline[i].items.length > 0) {
-            nestedOutlineEntry = await parseOutline(outline[i].items);
-        }
-
-        numPushes = numPushes + 1;
-        outlineEntries.push({
-            title: outline[i].title,
-            pageNumber: await getPageNumberFromDest(outline[i].dest),
-            children: nestedOutlineEntry,
-        });
-    }
-
-    return outlineEntries;
-}
-
 pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(newDoc) {
-    numPushes = 0;
     pdfDoc = newDoc;
 
     channel.setNumPages(pdfDoc.numPages);
+
     pdfDoc.getMetadata().then(function(data) {
         channel.setDocumentProperties(JSON.stringify(data.info));
     }).catch(function(error) {
         console.log("getMetadata error: " + error);
     });
 
-
-    /*
-        Times:
-        - 21:24:54.753 to 21:24:57.531
-        -
-     */
     pdfDoc.getOutline().then(function(outline) {
-        // https://github.com/mozilla/pdf.js/blob/a6db0457893b7bc960d63a8aa07b9091ddea84e0/src/display/api.js#L703-L722
-        console.log("outline is " + JSON.stringify(outline))
-        console.log("breadthFirstTraversal: beginning conversion");
         breadthFirstTraversal(outline).then(function(outlineEntries) {
-            console.log("breadthFirstTraversal done: " + JSON.stringify(outlineEntries));
-            console.log("size is " + outlineEntries.length);
             channel.setOutline(JSON.stringify(outlineEntries));
         }).catch(function(error) {
             console.log("breadthFirstTraversal error: " + error);
@@ -353,28 +307,6 @@ pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(
     }).catch(function(error) {
         console.log("getOutline error: " + error);
     });
-
-
-    /*
-        Times:
-        - 21:01:43.593 to 21:01:46.250
-        - 21:06:26.748 to 21:06:29.471
-        - 21:07:20.218 to 21:07:23.081
-        - 21:07:56.492 to 21:07:59.288
-        - 21:22:23.391 to 21:22:26.070
-     */
-    /*
-    pdfDoc.getOutline().then(function(outline) {
-            // https://github.com/mozilla/pdf.js/blob/a6db0457893b7bc960d63a8aa07b9091ddea84e0/src/display/api.js#L703-L722
-            console.log("parseOutline: beginning conversion");
-            parseOutline(outline).then(function(outlineEntries) {
-                console.log("parseOutline: finished conversion: " + JSON.stringify(outlineEntries));
-                console.log("parseOutline: size is " + numPushes);
-            });
-        }).catch(function(error) {
-            console.log("getOutline error: " + error);
-        });
-    */
 
     renderPage(channel.getPage(), false, false);
 }).catch(function(error) {
