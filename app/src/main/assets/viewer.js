@@ -206,14 +206,102 @@ function updateInset() {
 
 updateInset();
 
+/**
+ * Does an iterative breadth-first traversal of all of the nodes in the
+ * outline tree, adding the nodes to an array.
+ *
+ * @param {Array} outline The root node of the outline tree as obtained by
+ * pdfDoc.getOutline. This is assumed to be an ordered tree.
+ *
+ * @return {Promise} A promise that is resolved with an {Array} that contains
+ * all the nodes in the tree. The parents don't know who their children are,
+ * but the children know who their parents are. The linking of parents to their
+ * children is done in Java.
+ */
+async function breadthFirstTraversal(outline) {
+    if (outline === undefined || outline === null || outline.length == 0) {
+        return null;
+    }
+
+    // There's a 1-1 correspondence between pageNumberPromises and outlineEntries.
+    const pageNumberPromises = [];
+    const outlineEntries = [];
+
+    // Items at the top/root do not have a parent.
+    const outlineQueue = [{
+        children: outline,
+        parentIndex: -1,
+    }];
+
+    while (outlineQueue.length > 0) {
+        let currentOutlinePayload = outlineQueue.shift();
+        let indexOfParentOfCurrentChildren = currentOutlinePayload.parentIndex;
+        let currentChildren = currentOutlinePayload.children;
+
+        for (let i = 0; i < currentChildren.length; i++) {
+            // Push any children of currentChildren[i] to the queue.
+            if (currentChildren[i].items.length > 0) {
+                // The index of currentChildren[i] is outlineEntries.length
+                // since info for currentChildren[i] will be pushed to
+                // outlineEntries after.
+                outlineQueue.push({
+                    children: currentChildren[i].items,
+                    parentIndex: outlineEntries.length,
+                });
+            }
+
+            const currentPagePromise = pdfDoc.getPageIndex(currentChildren[i].dest[0]).then(
+                function(index) {
+                    return parseInt(index) + 1;
+                }).catch(function(error) {
+                    console.log("pdfDoc.getPageIndex error: " + error);
+                    return -1;
+                });
+            pageNumberPromises.push(currentPagePromise);
+
+            outlineEntries.push({
+                title: currentChildren[i].title,
+                pageNumber: -1,
+                parentIndex: indexOfParentOfCurrentChildren,
+            });
+        }
+    }
+
+    const promiseAll = Promise.all(pageNumberPromises).then(function(pageNumbers) {
+        for (let i = 0; i < outlineEntries.length; i++) {
+            outlineEntries[i].pageNumber = pageNumbers[i];
+        }
+    });
+    await promiseAll;
+
+    return outlineEntries;
+}
+
 pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(newDoc) {
     pdfDoc = newDoc;
+
     channel.setNumPages(pdfDoc.numPages);
+
     pdfDoc.getMetadata().then(function(data) {
         channel.setDocumentProperties(JSON.stringify(data.info));
     }).catch(function(error) {
         console.log("getMetadata error: " + error);
     });
+
+    pdfDoc.getOutline().then(function(outline) {
+        breadthFirstTraversal(outline).then(function(outlineEntries) {
+            if (outlineEntries !== null) {
+                channel.setOutline(JSON.stringify(outlineEntries));
+            } else {
+                channel.setOutline(null);
+            }
+        }).catch(function(error) {
+            console.log("breadthFirstTraversal error: " + error);
+        });;
+    }).catch(function(error) {
+        console.log("getOutline error: " + error);
+    });
+
     renderPage(channel.getPage(), false, false);
 }).catch(function(error) {
     console.log("getDocument error: " + error);
