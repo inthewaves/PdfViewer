@@ -300,7 +300,11 @@ pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(
 
     pdfDoc.getOutline().then(function(outline) {
         breadthFirstTraversal(outline).then(function(outlineEntries) {
-            channel.setOutline(JSON.stringify(outlineEntries));
+            if (outlineEntries !== null) {
+                channel.setOutline(JSON.stringify(outlineEntries));
+            } else {
+                channel.setOutline(null);
+            }
         }).catch(function(error) {
             console.log("breadthFirstTraversal error: " + error);
         });;
