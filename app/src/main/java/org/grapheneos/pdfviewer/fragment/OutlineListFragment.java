@@ -68,12 +68,12 @@ public class OutlineListFragment extends Fragment {
         public void bind(OutlineEntry outlineEntry) {
             mOutlineEntry = outlineEntry;
             mTitleTextView.setText(outlineEntry.getTitle());
-            final String pageNumber = String.valueOf(outlineEntry.getPageNumber());
-            if ("-1".equals(pageNumber)) {
+            final int pageNumber = outlineEntry.getPageNumber();
+            if (pageNumber == -1) {
                 mPageTextView.setVisibility(View.INVISIBLE);
             } else {
                 mPageTextView.setVisibility(View.VISIBLE);
-                mPageTextView.setText(pageNumber);
+                mPageTextView.setText(String.valueOf(pageNumber));
             }
 
             mHasChildrenImageView.setVisibility(outlineEntry.getChildren().isEmpty()
