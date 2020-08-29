@@ -206,16 +206,6 @@ function updateInset() {
 
 updateInset();
 
-async function getPageNumberFromDest(dest) {
-    try {
-        const index = await pdfDoc.getPageIndex(dest[0]);
-        return parseInt(index) + 1;
-    } catch (error) {
-        console.log("getPageNumberFromDest error: " + error);
-        return -1;
-    }
-}
-
 /**
  * Does an iterative breadth-first traversal of all of the nodes in the
  * outline tree, adding the nodes to an array.
