@@ -72,7 +72,7 @@ public class OutlineListFragment extends Fragment {
             if ("-1".equals(pageNumber)) {
                 mPageTextView.setVisibility(View.INVISIBLE);
             } else {
-                mPageTextView.setVisibility(View.INVISIBLE);
+                mPageTextView.setVisibility(View.VISIBLE);
                 mPageTextView.setText(pageNumber);
             }
 

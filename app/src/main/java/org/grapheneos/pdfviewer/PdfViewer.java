@@ -38,7 +38,6 @@ import org.grapheneos.pdfviewer.viewmodel.OutlineViewModel;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -372,7 +371,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
             snackbar.setText(R.string.io_error).show();
             return;
         }
-        mOutlineViewModel.setOutline(Collections.emptyList());
+        mOutlineViewModel.emptyOutline();
         mWebView.loadUrl("https://localhost/viewer.html");
     }
 

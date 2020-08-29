@@ -3,6 +3,7 @@ package org.grapheneos.pdfviewer.viewmodel;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.UiThread;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -21,14 +22,21 @@ import java.util.Map;
 public class OutlineViewModel extends ViewModel {
     private static final String TAG = "OutlineViewModel";
 
-    private final MutableLiveData<List<OutlineEntry>> mOutlineList = new MutableLiveData<>();
+    private final MutableLiveData<List<OutlineEntry>> mOutlineList =
+            new MutableLiveData<>(new ArrayList<>());
+
+    private final MutableLiveData<List<Integer>> mOutlinePath =
+            new MutableLiveData<>(new ArrayList<>());
 
     public LiveData<List<OutlineEntry>> getOutlineList() {
         return mOutlineList;
     }
 
-    public void setOutline(List<OutlineEntry> outlineList) {
-        mOutlineList.setValue(outlineList);
+    @UiThread
+    public void emptyOutline() {
+        final ArrayList<OutlineEntry> list = (ArrayList<OutlineEntry>) mOutlineList.getValue();
+        if (list != null) list.clear();
+        mOutlineList.setValue(list);
     }
 
     public void setOutlineFromJsonString(@NonNull String outlineString) {
@@ -66,7 +74,12 @@ public class OutlineViewModel extends ViewModel {
                         : Collections.emptyList());
             }
 
-            mOutlineList.setValue(topLevelOutline);
+            final ArrayList<OutlineEntry> list = (ArrayList<OutlineEntry>) mOutlineList.getValue();
+            if (list != null) {
+                list.clear();
+                list.addAll(topLevelOutline);
+            }
+            mOutlineList.setValue(list);
         } catch (JSONException e) {
             Log.e(TAG, "error", e);
         }
