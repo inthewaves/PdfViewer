@@ -22,12 +22,15 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.FrameLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.widget.Toolbar;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -95,15 +98,18 @@ public class PdfViewerFragment extends Fragment {
     private Toast mToast;
     private TextView mTextView;
     private Snackbar mSnackbar;
-    private FrameLayout mWebViewContainer;
+
+    private CoordinatorLayout mCoordinatorLayout;
+    private Toolbar mToolbar;
+    private ProgressBar mProgressBar;
 
     private PdfViewerViewModel mViewModel;
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (mWebViewContainer != null) {
-            mWebViewContainer.removeAllViews();
+        if (mCoordinatorLayout != null) {
+            mCoordinatorLayout.removeAllViews();
             if (mWebView != null) {
                 // Load about:blank to reset the view state and release page resources.
                 mWebView.removeJavascriptInterface(JAVASCRIPT_INTERFACE_NAME);
@@ -129,6 +135,15 @@ public class PdfViewerFragment extends Fragment {
     }
 
     private class Channel {
+        @JavascriptInterface
+        public void hideProgressBar() {
+            if (mProgressBar.getVisibility() == View.VISIBLE && getActivity() != null) {
+                (requireActivity()).runOnUiThread(() -> {
+                    mProgressBar.setVisibility(View.GONE);
+                });
+            }
+        }
+
         @JavascriptInterface
         public int getWindowInsetTop() {
             return mWindowInsetsTop;
@@ -224,15 +239,43 @@ public class PdfViewerFragment extends Fragment {
     @Override
     @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        mProgressBar = view.findViewById(R.id.viewer_progress_bar);
+
         mViewModel = new ViewModelProvider(requireActivity()).get(PdfViewerViewModel.class);
 
-        mWebViewContainer = view.findViewById(R.id.webview_container);
+        mToolbar = view.findViewById(R.id.toolbar);
+        ((PdfViewerActivity) requireActivity()).setSupportActionBar(mToolbar);
+        mToolbar.setOnApplyWindowInsetsListener((v, insets) -> {
+            // We have fitsSystemWindows for viewer_app_bar_layout set to false,
+            // so we need to make sure the Toolbar does not clip.
+            ViewGroup.MarginLayoutParams params =
+                    (ViewGroup.MarginLayoutParams) mToolbar.getLayoutParams();
+            params.setMargins(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
+                    insets.getSystemWindowInsetRight(), 0);
+            mToolbar.setLayoutParams(params);
+            return insets;
+        });
+
+        final View decorView = requireActivity().getWindow().getDecorView();
+        decorView.setOnSystemUiVisibilityChangeListener(visibility -> {
+            final ActionBar ab = ((PdfViewerActivity) requireActivity()).getSupportActionBar();
+            if (ab == null) return;
+            if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
+                ab.show();
+            } else {
+                ab.hide();
+            }
+        });
+
         mWebView = view.findViewById(R.id.webview);
-        // Resume timers if onDestroyView was called
+        // Resume timers if onDestroyView was called, since pauseTimers()
+        // affects some static state.
         mWebView.resumeTimers();
 
         mWebView.setOnApplyWindowInsetsListener((v, insets) -> {
-            mWindowInsetsTop = insets.getSystemWindowInsetTop();
+            // The ActionBar is no longer a part of the system UI, so we have to
+            // add in its height for the inset.
+            mWindowInsetsTop = insets.getSystemWindowInsetTop() + mToolbar.getMinimumHeight();
             mWebView.evaluateJavascript("updateInset()", null);
             return insets;
         });
@@ -362,7 +405,8 @@ public class PdfViewerFragment extends Fragment {
         mTextView.setTextSize(18);
         mTextView.setPadding(PADDING, 0, PADDING, 0);
 
-        mSnackbar = Snackbar.make(mWebViewContainer, "", Snackbar.LENGTH_LONG);
+        mCoordinatorLayout = view.findViewById(R.id.viewer_coordinator_layout);
+        mSnackbar = Snackbar.make(mCoordinatorLayout, "", Snackbar.LENGTH_LONG);
 
         final Intent intent = requireActivity().getIntent();
         if (Intent.ACTION_VIEW.equals(intent.getAction())) {
@@ -390,6 +434,12 @@ public class PdfViewerFragment extends Fragment {
         }
     }
 
+    private void showProgressBar(final int zoom) {
+        if (zoom == 0) {
+            mProgressBar.setVisibility(View.VISIBLE);
+        }
+    }
+
     private void loadPdf(boolean isLoadingNewPdf) {
         final Uri uri = mViewModel.getUri();
         if (uri == null) {
@@ -406,6 +456,7 @@ public class PdfViewerFragment extends Fragment {
             mViewModel.clearDocumentProperties();
             return;
         }
+        showProgressBar(0);
 
         if (isLoadingNewPdf) {
             mViewModel.clearDocumentProperties();
@@ -417,6 +468,7 @@ public class PdfViewerFragment extends Fragment {
 
     private void renderPage(final int zoom) {
         mWebView.evaluateJavascript("onRenderPage(" + zoom + ")", null);
+        showProgressBar(zoom);
     }
 
     private void documentOrientationChanged(final int orientationDegreesOffset) {
@@ -576,6 +628,7 @@ public class PdfViewerFragment extends Fragment {
 
             case R.id.action_zoom_in:
                 zoomIn(0.25f, true);
+                mSnackbar.show();
                 return true;
 
             case R.id.action_rotate_clockwise:
