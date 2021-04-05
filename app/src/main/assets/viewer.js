@@ -250,15 +250,22 @@ async function breadthFirstTraversal(outline) {
                 });
             }
 
-            const currentPagePromise = pdfDoc.getPageIndex(currentChildren[i].dest[0]).then(
+            let dest;
+            if (typeof currentChildren[i].dest === "string") {
+              dest = await pdfDoc.getDestination(currentChildren[i].dest);
+            } else {
+              dest = currentChildren[i].dest;
+            }
+            const currentPagePromise = pdfDoc.getPageIndex(dest[0]).then(
                 function(index) {
                     return parseInt(index) + 1;
                 }).catch(function(error) {
                     console.log("pdfDoc.getPageIndex error: " + error);
+                    // console.log("pdfDoc.getPageIndex error: Current child: " + JSON.stringify(currentChildren[i]));
                     return -1;
-                });
-            pageNumberPromises.push(currentPagePromise);
+            });
 
+            pageNumberPromises.push(currentPagePromise);
             outlineEntries.push({
                 title: currentChildren[i].title,
                 pageNumber: -1,
