@@ -256,16 +256,23 @@ async function breadthFirstTraversal(outline) {
             } else {
               dest = currentChildren[i].dest;
             }
-            const currentPagePromise = pdfDoc.getPageIndex(dest[0]).then(
-                function(index) {
-                    return parseInt(index) + 1;
-                }).catch(function(error) {
-                    console.log("pdfDoc.getPageIndex error: " + error);
-                    // console.log("pdfDoc.getPageIndex error: Current child: " + JSON.stringify(currentChildren[i]));
-                    return -1;
-            });
 
-            pageNumberPromises.push(currentPagePromise);
+            if (Array.isArray(dest)) {
+                const destRef = dest[0];
+                if (typeof destRef === "object") {
+                    pageNumberPromises.push(
+                        pdfDoc.getPageIndex(destRef).then(function(index) {
+                            return parseInt(index) + 1;
+                        }).catch(function(error) {
+                            console.log("pdfDoc.getPageIndex error: " + error);
+                            return -1;
+                        })
+                    );
+                } else {
+                    pageNumberPromises.push(Number.isInteger(destRef) ? destRef + 1 : -1);
+                }
+            }
+
             outlineEntries.push({
                 title: currentChildren[i].title,
                 pageNumber: -1,
