@@ -155,9 +155,7 @@ public class PdfViewer extends AppCompatActivity implements LoaderManager.Loader
                 return;
             }
 
-            runOnUiThread(() -> {
-                mOutlineViewModel.setOutlineFromJsonString(outlineString);
-            });
+            mOutlineViewModel.setOutlineFromJsonString(outlineString);
         }
     }
 

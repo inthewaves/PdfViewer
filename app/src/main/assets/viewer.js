@@ -207,88 +207,99 @@ function updateInset() {
 updateInset();
 
 /**
- * Does an iterative breadth-first traversal of all of the nodes in the
- * outline tree, adding the nodes to an array.
+ * Does an iterative breadth-first-like traversal of all of the nodes in the
+ * outline tree to convert the tree so that the nodes are of a simpler form.
+ * The simple outline nodes have the following structure:
+ *
+ * ```
+ *  {
+ *      title: String,
+ *      pageNumber: int (-1 means unknown),
+ *      children: Array of simple outline nodes,
+ *  }
+ * ```
  *
  * @param {Array} outline The root node of the outline tree as obtained by
  * pdfDoc.getOutline. This is assumed to be an ordered tree.
  *
  * @return {Promise} A promise that is resolved with an {Array} that contains
- * all the nodes in the tree. The parents don't know who their children are,
- * but the children know who their parents are. The linking of parents to their
- * children is done in Java.
+ * all the top-level nodes of the outline in simplified form (i.e., a simplified
+ * version of the original outline).
  */
-async function breadthFirstTraversal(outline) {
-    if (outline === undefined || outline === null || outline.length == 0) {
+async function convertOutlineToSimplifiedOutline(outline) {
+    if (outline === undefined || outline === null || outline.length === 0) {
         return null;
     }
 
-    // There's a 1-1 correspondence between pageNumberPromises and outlineEntries.
     const pageNumberPromises = [];
-    const outlineEntries = [];
+    const topLevelEntries = [];
 
-    // Items at the top/root do not have a parent.
+    // Each item in this queue represents a PDF.js outline node with a
+    // reference to an array of its children in simple node form.
     const outlineQueue = [{
-        children: outline,
-        parentIndex: -1,
+        pdfJsChildren: outline,
+        // The parent's array of simple children. Items at the top/root
+        // do not have a parent, so it starts out as null for them.
+        parentSimpleChildrenArray: null,
     }];
 
     while (outlineQueue.length > 0) {
-        let currentOutlinePayload = outlineQueue.shift();
-        let indexOfParentOfCurrentChildren = currentOutlinePayload.parentIndex;
-        let currentChildren = currentOutlinePayload.children;
+        const currentOutlinePayload = outlineQueue.shift();
+        const parentChildrenArray = currentOutlinePayload.parentSimpleChildrenArray;
+        const currentPdfJsChildren = currentOutlinePayload.pdfJsChildren;
+        for (let i = 0; i < currentPdfJsChildren.length; i++) {
+            const pdfJsChild = currentPdfJsChildren[i];
 
-        for (let i = 0; i < currentChildren.length; i++) {
-            // Push any children of currentChildren[i] to the queue.
-            if (currentChildren[i].items.length > 0) {
-                // The index of currentChildren[i] is outlineEntries.length
-                // since info for currentChildren[i] will be pushed to
-                // outlineEntries after.
+            const simpleChild = {
+                title: pdfJsChild.title,
+                // The pageNumber is resolved later.
+                pageNumber: -1,
+                children: [],
+            };
+
+            if (parentChildrenArray !== null) {
+                parentChildrenArray.push(simpleChild)
+            } else {
+                topLevelEntries.push(simpleChild)
+            }
+
+            // Push any children of pdfJsChild to the queue.
+            if (pdfJsChild.items.length > 0) {
                 outlineQueue.push({
-                    children: currentChildren[i].items,
-                    parentIndex: outlineEntries.length,
+                    pdfJsChildren: pdfJsChild.items,
+                    parentSimpleChildrenArray: simpleChild.children,
                 });
             }
 
+            // Resolve the page number. Note that dest options can be a string
+            // or an object from the PDF spec.
             let dest;
-            if (typeof currentChildren[i].dest === "string") {
-              dest = await pdfDoc.getDestination(currentChildren[i].dest);
+            if (typeof pdfJsChild.dest === "string") {
+              dest = await pdfDoc.getDestination(pdfJsChild.dest);
             } else {
-              dest = currentChildren[i].dest;
+              dest = pdfJsChild.dest;
             }
-
             if (Array.isArray(dest)) {
                 const destRef = dest[0];
                 if (typeof destRef === "object") {
                     pageNumberPromises.push(
                         pdfDoc.getPageIndex(destRef).then(function(index) {
-                            return parseInt(index) + 1;
+                            simpleChild.pageNumber = parseInt(index) + 1;
                         }).catch(function(error) {
                             console.log("pdfDoc.getPageIndex error: " + error);
-                            return -1;
+                            simpleChild.pageNumber = -1;
                         })
                     );
                 } else {
-                    pageNumberPromises.push(Number.isInteger(destRef) ? destRef + 1 : -1);
+                    simpleChild.pageNumber = Number.isInteger(destRef) ? destRef + 1 : -1;
                 }
             }
-
-            outlineEntries.push({
-                title: currentChildren[i].title,
-                pageNumber: -1,
-                parentIndex: indexOfParentOfCurrentChildren,
-            });
         }
     }
 
-    const promiseAll = Promise.all(pageNumberPromises).then(function(pageNumbers) {
-        for (let i = 0; i < outlineEntries.length; i++) {
-            outlineEntries[i].pageNumber = pageNumbers[i];
-        }
-    });
-    await promiseAll;
+    await Promise.all(pageNumberPromises);
 
-    return outlineEntries;
+    return topLevelEntries;
 }
 
 pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(newDoc) {
@@ -303,15 +314,15 @@ pdfjsLib.getDocument("https://localhost/placeholder.pdf").promise.then(function(
     });
 
     pdfDoc.getOutline().then(function(outline) {
-        breadthFirstTraversal(outline).then(function(outlineEntries) {
+        convertOutlineToSimplifiedOutline(outline).then(function(outlineEntries) {
             if (outlineEntries !== null) {
                 channel.setOutline(JSON.stringify(outlineEntries));
             } else {
                 channel.setOutline(null);
             }
         }).catch(function(error) {
-            console.log("breadthFirstTraversal error: " + error);
-        });;
+            console.log("convertOutlineToSimplifiedOutline error: " + error);
+        });
     }).catch(function(error) {
         console.log("getOutline error: " + error);
     });

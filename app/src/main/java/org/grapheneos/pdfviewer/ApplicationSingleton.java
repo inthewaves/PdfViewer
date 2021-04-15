@@ -13,7 +13,11 @@ public class ApplicationSingleton {
 
     public static ApplicationSingleton getInstance() {
         if (mInstance == null) {
-            mInstance = new ApplicationSingleton();
+            synchronized (ApplicationSingleton.class) {
+                if (mInstance == null) {
+                    mInstance = new ApplicationSingleton();
+                }
+            }
         }
         return mInstance;
     }
