@@ -4,6 +4,11 @@ import org.grapheneos.pdfviewer.model.OutlineEntry;
 
 import java.util.List;
 
+/**
+ * Contains data to be shared between Activities.
+ *
+ * TODO: Convert PDFViewer to use Fragments and just use a shared ViewModel.
+ */
 public class ApplicationSingleton {
     private static ApplicationSingleton mInstance;
 
