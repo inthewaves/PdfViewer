@@ -273,12 +273,8 @@ async function convertOutlineToSimplifiedOutline(outline) {
 
             // Resolve the page number. Note that dest options can be a string
             // or an object from the PDF spec.
-            let dest;
-            if (typeof pdfJsChild.dest === "string") {
-              dest = await pdfDoc.getDestination(pdfJsChild.dest);
-            } else {
-              dest = pdfJsChild.dest;
-            }
+            const dest = (typeof pdfJsChild.dest === "string")
+                ? await pdfDoc.getDestination(pdfJsChild.dest) : pdfJsChild.dest;
             if (Array.isArray(dest)) {
                 const destRef = dest[0];
                 if (typeof destRef === "object") {
